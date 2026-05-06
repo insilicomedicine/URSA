@@ -1,0 +1,258 @@
+classDiagram
+
+    %% ============================================================
+    %% Top-level orchestration
+    %% ============================================================
+
+    Ursa --> PathConsistencyChecker
+    Ursa --> BuildingBlockChecker
+    Ursa --> PathCollapser
+    Ursa --> PathScorer
+    Ursa --> BestPathSelector
+    Ursa --> DatasetMetricsCalculator
+    Ursa --> Logger
+
+    %% ============================================================
+    %% Validation pipeline
+    %% ============================================================
+
+    PathConsistencyChecker ..|> Checker
+    BuildingBlockChecker ..|> Checker
+
+    Checker --> RetrosyntheticPath
+    PathConsistencyChecker --> RetrosyntheticNode
+    BuildingBlockChecker --> BuildingBlock
+    BuildingBlockChecker --> ValidationConfig
+
+    %% ============================================================
+    %% Collapsing
+    %% ============================================================
+
+    PathCollapser --> RetrosyntheticPath
+    PathCollapser --> RetrosyntheticNode
+
+    %% ============================================================
+    %% Scoring
+    %% ============================================================
+
+    PathScorer --> ReactionScorer
+    PathScorer --> RetrosyntheticPath
+    PathScorer --> VariantResult
+    PathScorer --> PathScoringConfig
+
+    BestPathSelector --> VariantResult
+    BestPathSelector --> PathScoringConfig
+
+    %% ============================================================
+    %% Metrics
+    %% ============================================================
+
+    DatasetMetricsCalculator --> PathResult
+    DatasetMetricsCalculator --> DatasetMetrics
+    DatasetMetricsCalculator --> DatasetResult
+
+    %% ============================================================
+    %% Results
+    %% ============================================================
+
+    PathResult --> RetrosyntheticPath
+    PathResult --> VariantResult
+    PathResult --> BuildingBlock
+    VariantResult --> RetrosyntheticPath
+    VariantResult --> StepResult
+    DatasetResult --> PathResult
+    DatasetResult --> DatasetMetrics
+    StepResult --> RetrosyntheticNode
+
+    %% ============================================================
+    %% Core domain model
+    %% ============================================================
+
+    RetrosyntheticPath --> RetrosyntheticNode
+    RetrosyntheticNode --> RetrosyntheticNode
+
+    %% ============================================================
+    %% Logging
+    %% ============================================================
+
+    Logger --> LoggingConfig
+    Logger --> Formatter
+
+    %% ============================================================
+    %% Class definitions
+    %% ============================================================
+
+    class Ursa {
+        -ReactionScorer reaction_scorer
+        -PathConsistencyChecker consistency_checker
+        -BuildingBlockChecker bb_checker
+        -PathCollapser collapser
+        -PathScorer path_scorer
+        -BestPathSelector selector
+        -DatasetMetricsCalculator metrics_calculator
+        -Logger logger
+        +score(RetrosyntheticPath path) PathResult
+        +score_dataset(Sequence[RetrosyntheticPath] paths) DatasetResult
+    }
+
+    %% ---- Validation ----
+
+    class Checker {
+        <<Protocol>>
+        +check(RetrosyntheticPath path) bool
+    }
+
+    class PathConsistencyChecker {
+        +check(RetrosyntheticPath path) bool
+        -_check_node(RetrosyntheticNode node) bool
+    }
+
+    class BuildingBlockChecker {
+        -frozenset[str] catalog
+        +from_file(PathLike catalog_path) BuildingBlockChecker
+        +check(RetrosyntheticPath path) tuple[BuildingBlock, ...]
+        -_load_catalog(PathLike catalog_path) frozenset[str]
+    }
+
+    %% ---- Collapsing ----
+
+    class PathCollapser {
+        -int combination_step_limit
+        +collapse(RetrosyntheticPath path) tuple[RetrosyntheticPath, ...]
+        -_build_adjacency(RetrosyntheticPath path) dict
+        -_find_skippable_nodes(RetrosyntheticPath path) tuple[RetrosyntheticNode, ...]
+        -_generate_valid_combinations(tuple skippable, dict adjacency) tuple
+        -_apply_collapse(RetrosyntheticPath path, tuple combination) RetrosyntheticPath
+    }
+
+    %% ---- Scoring ----
+
+    class ReactionScorer {
+        <<Protocol>>
+        +score(str reaction_smiles) float
+    }
+
+    class PathScorer {
+        -ReactionScorer scorer
+        +score(RetrosyntheticPath path) VariantResult
+        -_score_node(RetrosyntheticNode node) StepResult
+    }
+
+    class BestPathSelector {
+        +select(tuple[VariantResult, ...] variants) VariantResult
+        -_count_failed_steps(VariantResult variant) int
+        -_average_score(VariantResult variant) float
+    }
+
+    %% ---- Metrics ----
+
+    class DatasetMetricsCalculator {
+        +calculate(tuple[PathResult, ...] path_results) DatasetMetrics
+    }
+
+    %% ---- Domain model ----
+
+    class RetrosyntheticNode {
+        <<Dataclass / frozen>>
+        +str molecule_smiles
+        +str reaction_smiles
+        +tuple[RetrosyntheticNode, ...] children
+        +bool is_starting_material
+        +_from_mol_dict(dict mol_node) RetrosyntheticNode
+    }
+
+    class RetrosyntheticPath {
+        <<Dataclass / frozen>>
+        +str path_id
+        +RetrosyntheticNode root
+        +get_all_steps() tuple[RetrosyntheticNode, ...]
+        +get_starting_materials() tuple[RetrosyntheticNode, ...]
+        +depth() int
+        +num_steps() int
+        +from_dict(dict data, str path_id) RetrosyntheticPath
+    }
+
+    class BuildingBlock {
+        <<Dataclass / frozen>>
+        +str smiles
+        +bool found_in_catalog
+    }
+
+    class StepResult {
+        <<Dataclass / frozen>>
+        +RetrosyntheticNode node
+        +float score
+        +bool passed
+    }
+
+    class VariantResult {
+        <<Dataclass / frozen>>
+        +RetrosyntheticPath path
+        +tuple[StepResult, ...] step_results
+        +int num_sis_steps
+        +float percent_found
+        +float chemcensor_per_route
+        +bool all_steps_passed
+    }
+
+    class PathResult {
+        <<Dataclass / frozen>>
+        +RetrosyntheticPath original_path
+        +bool is_consistent
+        +tuple[BuildingBlock, ...] starting_materials
+        +bool all_bb_found
+        +VariantResult best_variant
+        +bool is_route_solved
+    }
+
+    class DatasetResult {
+        <<Dataclass / frozen>>
+        +tuple[PathResult, ...] path_results
+        +DatasetMetrics metrics
+    }
+
+    class DatasetMetrics {
+        <<Dataclass / frozen>>
+        +int total_molecules
+        +int molecules_with_route
+        +int solved_routes
+        +int passed_steps
+        +int total_steps
+        +int sis_steps
+        +float solvability_plus
+        +float mean_chemcensor_score
+    }
+
+    %% ---- Configs ----
+
+    class PathScoringConfig {
+        <<Enum>>
+        +pass_threshold
+        +failed_step_score
+    }
+
+    class ValidationConfig {
+        <<Enum>>
+        +min_path_depth
+        +combination_step_limit
+    }
+
+    class LoggingConfig {
+        <<Enum>>
+        +default_level
+        +json_format
+    }
+
+    %% ---- Logging ----
+
+    class Logger {
+        +log_step(str path_id, StepResult result)
+        +log_variant(str path_id, VariantResult result)
+        +log_path(PathResult result)
+        +log_dataset(DatasetResult result)
+    }
+
+    class Formatter {
+        <<JSONFormatter>>
+        +format(LogRecord record) str
+    }

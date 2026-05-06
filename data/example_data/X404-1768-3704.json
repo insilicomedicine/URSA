@@ -1,0 +1,174 @@
+{
+  "smiles": "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)[nH]1",
+  "result": {
+    "request": {
+      "inputs": [
+        "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)[nH]1"
+      ],
+      "workflow": "multi_step",
+      "verbose": false,
+      "inventory_name": "emolecules",
+      "num_top_results": 20,
+      "time_limit_s": 60.0,
+      "stop_on_first_solution": false,
+      "expand_purchasable_target": true,
+      "num_routes": 3,
+      "num_routes_for_initial_extraction": 500,
+      "time_limit_s_for_initial_extraction": 2.0,
+      "route_distance_weight": 8.0
+    },
+    "outputs": [
+      {
+        "routes": [
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "CSc1nc(=O)cc(C)[nH]1",
+                  "N#Cc1cccc(N)c1"
+                ],
+                "product": "Cc1cc(=O)nc(Nc2cccc(C#N)c2)[nH]1",
+                "probability": 0.980278730392456,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "BrCc1ccc(Br)cc1",
+                  "Cc1cc(=O)nc(Nc2cccc(C#N)c2)[nH]1"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(Br)cc2)c2cccc(C#N)c2)[nH]1",
+                "probability": 0.9818653464317322,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "Cc1cc(=O)nc(N(Cc2ccc(Br)cc2)c2cccc(C#N)c2)[nH]1",
+                  "FC(F)(F)C1CNC1"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)[nH]1",
+                "probability": 0.9251835942268372,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 3,
+            "step_probability_min": 0.9251835942268372,
+            "step_probability_product": 0.8904907963334485
+          },
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "CSc1nc(=O)cc(C)[nH]1",
+                  "C[Si](C)(C)CCOCCl"
+                ],
+                "product": "CSc1nc(=O)cc(C)n1COCC[Si](C)(C)C",
+                "probability": 0.7693058848381042,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CSc1nc(=O)cc(C)n1COCC[Si](C)(C)C",
+                  "N#Cc1cccc(N)c1"
+                ],
+                "product": "Cc1cc(=O)nc(Nc2cccc(C#N)c2)n1COCC[Si](C)(C)C",
+                "probability": 0.9095900654792786,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "BrCc1ccc(Br)cc1",
+                  "Cc1cc(=O)nc(Nc2cccc(C#N)c2)n1COCC[Si](C)(C)C"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(Br)cc2)c2cccc(C#N)c2)n1COCC[Si](C)(C)C",
+                "probability": 0.9724645018577576,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "Cc1cc(=O)nc(N(Cc2ccc(Br)cc2)c2cccc(C#N)c2)n1COCC[Si](C)(C)C",
+                  "FC(F)(F)C1CNC1"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)n1COCC[Si](C)(C)C",
+                "probability": 0.9792938828468323,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)n1COCC[Si](C)(C)C"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)[nH]1",
+                "probability": 0.01961359940469265,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 5,
+            "step_probability_min": 0.01961359940469265,
+            "step_probability_product": 0.01307039951600196
+          },
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "CSc1nc(=O)cc(C)[nH]1",
+                  "N#Cc1cccc(N)c1"
+                ],
+                "product": "Cc1cc(=O)nc(Nc2cccc(C#N)c2)[nH]1",
+                "probability": 0.980278730392456,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "COC(=O)c1ccc(Br)cc1",
+                  "FC(F)(F)C1CNC1"
+                ],
+                "product": "COC(=O)c1ccc(N2CC(C(F)(F)F)C2)cc1",
+                "probability": 0.9494132399559021,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "COC(=O)c1ccc(N2CC(C(F)(F)F)C2)cc1"
+                ],
+                "product": "OCc1ccc(N2CC(C(F)(F)F)C2)cc1",
+                "probability": 0.5928102135658264,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "BrP(Br)Br",
+                  "OCc1ccc(N2CC(C(F)(F)F)C2)cc1"
+                ],
+                "product": "FC(F)(F)C1CN(c2ccc(CBr)cc2)C1",
+                "probability": 0.9501187801361084,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "Cc1cc(=O)nc(Nc2cccc(C#N)c2)[nH]1",
+                  "FC(F)(F)C1CN(c2ccc(CBr)cc2)C1"
+                ],
+                "product": "Cc1cc(=O)nc(N(Cc2ccc(N3CC(C(F)(F)F)C3)cc2)c2cccc(C#N)c2)[nH]1",
+                "probability": 0.023793382570147514,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 5,
+            "step_probability_min": 0.023793382570147514,
+            "step_probability_product": 0.01247253212142489
+          }
+        ],
+        "num_routes": 3,
+        "num_routes_initial_extraction": 187,
+        "target_is_purchasable": false,
+        "num_model_calls_total": 39,
+        "num_model_calls_new": 30,
+        "num_model_calls_cached": 9,
+        "num_nodes_explored": 1451,
+        "time_taken_s_search": 60.740060567855835,
+        "time_taken_s_extraction": 0.03821969032287598,
+        "time_taken_s_selection": 0.0033059120178222656
+      }
+    ],
+    "time_taken_s": 60.790464639663696
+  }
+}

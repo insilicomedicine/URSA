@@ -1,0 +1,217 @@
+{
+  "smiles": "O=S1(=O)Nc2c(-c3ccc(O[C@@H]4CNCC4(F)F)nc3)cccc2N1Cc1ccccc1C(F)(F)F",
+  "result": {
+    "request": {
+      "inputs": [
+        "O=S1(=O)Nc2c(-c3ccc(O[C@@H]4CNCC4(F)F)nc3)cccc2N1Cc1ccccc1C(F)(F)F"
+      ],
+      "workflow": "multi_step",
+      "verbose": false,
+      "inventory_name": "emolecules",
+      "num_top_results": 20,
+      "time_limit_s": 60.0,
+      "stop_on_first_solution": false,
+      "expand_purchasable_target": true,
+      "num_routes": 3,
+      "num_routes_for_initial_extraction": 500,
+      "time_limit_s_for_initial_extraction": 2.0,
+      "route_distance_weight": 8.0
+    },
+    "outputs": [
+      {
+        "routes": [
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "NCc1ccccc1C(F)(F)F",
+                  "O=[N+]([O-])c1c(F)cccc1Br"
+                ],
+                "product": "O=[N+]([O-])c1c(Br)cccc1NCc1ccccc1C(F)(F)F",
+                "probability": 0.9739132523536682,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "O=[N+]([O-])c1c(Br)cccc1NCc1ccccc1C(F)(F)F"
+                ],
+                "product": "Nc1c(Br)cccc1NCc1ccccc1C(F)(F)F",
+                "probability": 0.9793034791946411,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "NS(N)(=O)=O",
+                  "Nc1c(Br)cccc1NCc1ccccc1C(F)(F)F"
+                ],
+                "product": "O=S1(=O)Nc2c(Br)cccc2N1Cc1ccccc1C(F)(F)F",
+                "probability": 0.5914076566696167,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](O)C(F)(F)C1",
+                  "Fc1ccc(Br)cn1"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                "probability": 0.9715430736541748,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                  "CC1(C)OB(B2OC(C)(C)C(C)(C)O2)OC1(C)C"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(B3OC(C)(C)C(C)(C)O3)cn2)C(F)(F)C1",
+                "probability": 0.980552613735199,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(B3OC(C)(C)C(C)(C)O3)cn2)C(F)(F)C1",
+                  "O=S1(=O)Nc2c(Br)cccc2N1Cc1ccccc1C(F)(F)F"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1",
+                "probability": 0.6997318863868713,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1"
+                ],
+                "product": "O=S1(=O)Nc2c(-c3ccc(O[C@@H]4CNCC4(F)F)nc3)cccc2N1Cc1ccccc1C(F)(F)F",
+                "probability": 0.9796897172927856,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 7,
+            "step_probability_min": 0.5914076566696167,
+            "step_probability_product": 0.3683644340751667
+          },
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](O)C(F)(F)C1",
+                  "Fc1ccc(Br)cn1"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                "probability": 0.9715430736541748,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                  "CC1(C)OB(B2OC(C)(C)C(C)(C)O2)OC1(C)C"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(B3OC(C)(C)C(C)(C)O3)cn2)C(F)(F)C1",
+                "probability": 0.980552613735199,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "NS(N)(=O)=O",
+                  "Nc1cccc(Br)c1N"
+                ],
+                "product": "O=S1(=O)Nc2cccc(Br)c2N1",
+                "probability": 0.6658035516738892,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(B3OC(C)(C)C(C)(C)O3)cn2)C(F)(F)C1",
+                  "O=S1(=O)Nc2cccc(Br)c2N1"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4)cn2)C(F)(F)C1",
+                "probability": 0.9289035201072693,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4)cn2)C(F)(F)C1",
+                  "FC(F)(F)c1ccccc1CBr"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1",
+                "probability": 0.09337993711233139,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1"
+                ],
+                "product": "O=S1(=O)Nc2c(-c3ccc(O[C@@H]4CNCC4(F)F)nc3)cccc2N1Cc1ccccc1C(F)(F)F",
+                "probability": 0.9796897172927856,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 6,
+            "step_probability_min": 0.09337993711233139,
+            "step_probability_product": 0.05390037723064214
+          },
+          {
+            "reactions": [
+              {
+                "reactants": [
+                  "NS(N)(=O)=O",
+                  "Nc1cccc(I)c1N"
+                ],
+                "product": "O=S1(=O)Nc2cccc(I)c2N1",
+                "probability": 0.6321207880973816,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "FC(F)(F)c1ccccc1CBr",
+                  "O=S1(=O)Nc2cccc(I)c2N1"
+                ],
+                "product": "O=S1(=O)Nc2c(I)cccc2N1Cc1ccccc1C(F)(F)F",
+                "probability": 0.8247696757316589,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](O)C(F)(F)C1",
+                  "Fc1ccc(Br)cn1"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                "probability": 0.9715430736541748,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(Br)cn2)C(F)(F)C1",
+                  "O=S1(=O)Nc2c(I)cccc2N1Cc1ccccc1C(F)(F)F"
+                ],
+                "product": "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1",
+                "probability": 0.0143130449578166,
+                "metadata": {}
+              },
+              {
+                "reactants": [
+                  "CC(C)(C)OC(=O)N1C[C@@H](Oc2ccc(-c3cccc4c3NS(=O)(=O)N4Cc3ccccc3C(F)(F)F)cn2)C(F)(F)C1"
+                ],
+                "product": "O=S1(=O)Nc2c(-c3ccc(O[C@@H]4CNCC4(F)F)nc3)cccc2N1Cc1ccccc1C(F)(F)F",
+                "probability": 0.9796897172927856,
+                "metadata": {}
+              }
+            ],
+            "num_steps": 5,
+            "step_probability_min": 0.0143130449578166,
+            "step_probability_product": 0.007102568041659576
+          }
+        ],
+        "num_routes": 3,
+        "num_routes_initial_extraction": 500,
+        "target_is_purchasable": false,
+        "num_model_calls_total": 56,
+        "num_model_calls_new": 28,
+        "num_model_calls_cached": 28,
+        "num_nodes_explored": 1980,
+        "time_taken_s_search": 58.627678871154785,
+        "time_taken_s_extraction": 0.14543676376342773,
+        "time_taken_s_selection": 0.010605096817016602
+      }
+    ],
+    "time_taken_s": 58.79315257072449
+  }
+}

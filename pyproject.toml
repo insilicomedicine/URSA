@@ -1,0 +1,80 @@
+[project]
+name = "ursa"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chemcensor==1.0.0",
+    "frozendict==2.4.6",
+    "numpy==1.26.4",
+    "rdkit>=2025.3.5",
+    "retrocast>=0.5.3",
+]
+
+[project.scripts]
+ursa-bench = "ursa.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "flake8==7.0.0",
+    "pre-commit==4.2.0",
+    "types-pyyaml==6.0.12.2",
+    "lazy-object-proxy==1.11.0",
+    "types-frozendict==2.0.9",
+    "typing-extensions==4.14.1",
+    "mypy==1.10.0",
+    "pytest==8.0.0",
+    "pytest-cov==6.0.0",
+    "pytest-dotenv==0.5.2",
+    "pytest-benchmark==4.0.0",
+    "pytest-lazy-fixtures==1.1.2",
+    "pytest-runner==6.0.0",
+    "pytest-mock==3.12.0",
+    "bandit[toml]==1.8.6",
+    "black==25.1.0",
+    "sphinx==8.0.0",
+    "sphinx-rtd-theme==3.0.0",
+    "jupyterlab==4.2.1",
+]
+
+[tool.mypy]
+incremental = false
+ignore_missing_imports = true
+python_version = 3.12
+# Avoid mypy following into transformers (prevents INTERNAL ERROR in
+# transformers.models.sam_hq.processing_samhq when run in CI with full deps).
+[[tool.mypy.overrides]]
+module = "transformers.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "chemcensor"
+follow_imports = "skip"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+  ".", "src",
+]
+markers = [
+    "smoke_test: Run smoke tests",
+    "heavy_test: Run heavy tests",
+]
+
+[tool.bandit]
+skips = ['B101', 'B105', 'B301', 'B311', 'B403', 'B404', 'B603', 'B607']
+exclude_dirs = ["tests"]
+
+[build-system]
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ursa = ["**/*.so"]
+
+# TODO: Remove this once ChemCensor is released
+[tool.uv.sources]
+chemcensor = { path = "chemcensor", editable = true }
