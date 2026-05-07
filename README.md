@@ -4,10 +4,30 @@ URSA is a framework for evaluating retrosynthetic routes: it checks the structur
 
 ## Installation
 
-ChemCensor is not published. Clone the ChemCensor repository into `./chemcensor` at the repo root (this directory is gitignored), then install dependencies:
+### 1. Install ChemCensor dependency
+ChemCensor is not published on PyPI. Download the repository archive from
+https://anonymous.4open.science/r/ChemCensor-81B0/ (use the **Download ZIP**
+button), then unpack it into `./chemcensor` at the URSA repo root
+(this directory is gitignored):
 
 ```bash
-git clone https://github.com/<ORG_OR_USER>/chemcensor.git chemcensor
+unzip /path/to/downloads/ChemCensor-81B0.zip
+mv ChemCensor-81B0 chemcensor
+```
+
+### 2. Install uv
+
+We recommend using uv for fast, reliable dependency management.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 3. Install URSA dependencies 
+
+```bash
 uv sync --extra dev
 ```
 
@@ -18,7 +38,22 @@ Before working with benchmarks or the full scoring pipeline locally, download th
 - `data/building_blocks/URSA_BBs_v1_0_0.csv` — building-block catalog for `BuildingBlockChecker`
 - `data/chemcensor_db/ChemCensor_DB_v1_0_0.sqlite` — ChemCensor SQLite database for scoring
 
-Download links: *to be added.*
+Download links: https://osf.io/wms6r/overview?view_only=073f80629f674f9084d95b7efc9e01ba
+
+```bash
+mkdir -p data/building_blocks data/chemcensor_db
+unzip /path/to/downloads/'D3. URSA_BBs.csv.zip' -d data/building_blocks
+unzip /path/to/downloads/'D6. URSA-minor-0.5.2-U2_database.zip' -d data/chemcensor_db
+```
+
+Once the zip contents are extracted, build the ChemCensor SQLite database from
+the Parquet export:
+
+```bash
+python scripts/import_parquet_to_sqlite.py \
+    --parquet-dir data/chemcensor_db/uspto_full_parquet \
+    --out-sqlite data/chemcensor_db/ChemCensor_DB_v1_0_0.sqlite
+```
 
 ## Example run
 
@@ -31,7 +66,7 @@ Download links: *to be added.*
 Score the bundle:
 
 ```bash
-ursa-bench \
+uv run ursa-bench \
     --input     data/example_data/bundled.json.gz \
     --adapter   retrochimera \
     --benchmark EXPERT_2026 \
@@ -72,24 +107,6 @@ retrochimera, retrostar, synplanner, syntheseus, synllama
 
 Skip `--adapter` and use `--routes` when you already have RetroCast-formatted routes on disk — useful for caching the adaptation step across multiple benchmark runs.
 
-## Programmatic API
-
-```python
-from ursa import Ursa, RetrosyntheticPath
-
-ursa = Ursa()
-
-# single path
-result = ursa.score(path)
-
-# dataset
-dataset_result = ursa.score_dataset(paths, target_smiles=target_smiles)
-print(dataset_result.metrics.solv_2)
-dataset_result.save("data/results", stem="example")
-```
-
-`Ursa` orchestrates the pipeline: `PathConsistencyChecker` → `BuildingBlockChecker` → `PathCollapser` → `PathScorer` → `BestPathSelector` → `DatasetMetricsCalculator`.
-
 ## Built-in benchmark sets
 
 Located in `data/URSA_benchmarking_sets/`:
@@ -99,9 +116,3 @@ Located in `data/URSA_benchmarking_sets/`:
 - `USPTO_190`
 
 A custom set of target molecules can be supplied by passing a CSV path instead of a preset name (default columns: `Structure ID`, `SMILES`; overridable via `--id-col` / `--smiles-col`).
-
-## Tests
-
-```bash
-pytest
-```
