@@ -99,10 +99,10 @@ def retrocast_path() -> dict:
     return {
         "target": {
             "smiles": "CCO",
-            "synthesis_step": {
+            "product_of": {
                 "reactants": [
-                    {"smiles": "CC", "synthesis_step": None},
-                    {"smiles": "O", "synthesis_step": None},
+                    {"smiles": "CC", "product_of": None},
+                    {"smiles": "O", "product_of": None},
                 ]
             },
         }
@@ -174,7 +174,7 @@ def test_node_inequality():
 
 
 def test_from_mol_dict_leaf_via_null_step():
-    mol = {"smiles": "CCO", "synthesis_step": None}
+    mol = {"smiles": "CCO", "product_of": None}
     node = RetrosyntheticNode._from_mol_dict(mol)
     assert node.is_starting_material
     assert node.canonical_smiles == _canonical("CCO")
@@ -187,7 +187,7 @@ def test_from_mol_dict_leaf_via_missing_step():
 
 
 def test_from_mol_dict_leaf_via_empty_reactants():
-    mol = {"smiles": "CCO", "synthesis_step": {"reactants": []}}
+    mol = {"smiles": "CCO", "product_of": {"reactants": []}}
     node = RetrosyntheticNode._from_mol_dict(mol)
     assert node.is_starting_material
 
@@ -195,10 +195,10 @@ def test_from_mol_dict_leaf_via_empty_reactants():
 def test_from_mol_dict_internal_node():
     mol = {
         "smiles": "CCO",
-        "synthesis_step": {
+        "product_of": {
             "reactants": [
-                {"smiles": "CC", "synthesis_step": None},
-                {"smiles": "O", "synthesis_step": None},
+                {"smiles": "CC", "product_of": None},
+                {"smiles": "O", "product_of": None},
             ]
         },
     }
@@ -360,9 +360,21 @@ def test_example_num_steps(path_example):
     assert path_example.num_steps == 7
 
 
+def _json_leaf_smiles(mol: dict) -> set[str]:
+    """Collect leaf SMILES by walking a RetroCast molecule's ``product_of`` tree."""
+    step = mol.get("product_of")
+    reactants = step.get("reactants") if step else None
+    if not reactants:
+        return {mol["smiles"]}
+    leaves: set[str] = set()
+    for r in reactants:
+        leaves |= _json_leaf_smiles(r)
+    return leaves
+
+
 def test_example_leaves_match_json(retrocast_example, path_example):
     leaf_smiles = {n.smiles for n in path_example.get_starting_materials()}
-    expected = {m["smiles"] for m in retrocast_example["leaves"]}
+    expected = _json_leaf_smiles(retrocast_example["target"])
     assert leaf_smiles == expected
 
 

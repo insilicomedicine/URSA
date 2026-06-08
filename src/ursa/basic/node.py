@@ -42,18 +42,17 @@ class RetrosyntheticNode:
     def _from_mol_dict(cls, mol_node: dict) -> RetrosyntheticNode:
         """Construct a node recursively from a RetroCast molecule dict.
 
-        Expected ``mol_node`` structure::
+        Expected ``mol_node`` structure (RetroCast schema 2)::
 
             {
                 "smiles": "<SMILES>",
                 "inchikey": "<InChIKey>",
-                "synthesis_step": {
+                "product_of": {
                     "reactants": [ { ... same structure ... }, ... ]
-                } | null,
-                "is_leaf": false
+                } | null
             }
 
-        A molecule whose ``synthesis_step`` is ``null`` or has empty
+        A molecule whose ``product_of`` is ``null`` or has empty
         ``reactants`` becomes a leaf node with no children.
 
         :param mol_node: Molecule object from a RetroCast JSON route.
@@ -64,7 +63,7 @@ class RetrosyntheticNode:
         :rtype: RetrosyntheticNode
         """
         smiles = mol_node["smiles"]
-        step = mol_node.get("synthesis_step")
+        step = mol_node.get("product_of")
         if not step:
             return cls(smiles=smiles)
         reactants = step.get("reactants") or ()

@@ -1,1 +1,132 @@
-{"target": {"smiles": "CN1[C@H](CNc2ccccc2Nc2ccc(-n3nccn3)nc2)CCS1(=O)=O", "inchikey": "VBPPQCFXVOIEKV-HNNXBMFYSA-N", "synthesis_step": {"reactants": [{"smiles": "CN1[C@H](C=O)CCS1(=O)=O", "inchikey": "VXELUBVHBGIESE-YFKPBYRVSA-N", "synthesis_step": {"reactants": [{"smiles": "CN1[C@H](CO)CCS1(=O)=O", "inchikey": "GPEFZKYJMOJXNN-YFKPBYRVSA-N", "synthesis_step": {"reactants": [{"smiles": "CN1[C@H](COCc2ccccc2)CCS1(=O)=O", "inchikey": "IXIPNVZVOFKPJV-LBPRGKRZSA-N", "synthesis_step": {"reactants": [{"smiles": "CI", "inchikey": "INQOMBQAUSQDDS-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "O=S1(=O)CC[C@@H](COCc2ccccc2)N1", "inchikey": "ZCRRABZFLYWNOM-NSHDSACASA-N", "synthesis_step": {"reactants": [{"smiles": "CS(=O)(=O)Cl", "inchikey": "QARBMVPHQWIHKH-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "N[C@@H](CO)COCc1ccccc1", "inchikey": "ZJUOMDNENVWMPL-JTQLQIEISA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}, {"smiles": "Nc1ccccc1Nc1ccc(-n2nccn2)nc1", "inchikey": "HCQQEOKSRQGILC-UHFFFAOYSA-N", "synthesis_step": {"reactants": [{"smiles": "O=[N+]([O-])c1ccccc1Nc1ccc(-n2nccn2)nc1", "inchikey": "KANHIRKLWSDYES-UHFFFAOYSA-N", "synthesis_step": {"reactants": [{"smiles": "Nc1ccc(-n2nccn2)nc1", "inchikey": "POAADVIZZNCRBS-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "O=[N+]([O-])c1ccccc1F", "inchikey": "PWKNBLFSJAVFAB-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": false}, "metadata": {}, "is_leaf": false}], "mapped_smiles": null, "template": null, "reagents": null, "solvents": null, "metadata": {}, "is_convergent": true}, "metadata": {}, "is_leaf": false}, "rank": 1, "metadata": {}, "retrocast_version": "1.dev4", "length": 5, "leaves": [{"smiles": "O=[N+]([O-])c1ccccc1F", "inchikey": "PWKNBLFSJAVFAB-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "CI", "inchikey": "INQOMBQAUSQDDS-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "N[C@@H](CO)COCc1ccccc1", "inchikey": "ZJUOMDNENVWMPL-JTQLQIEISA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "CS(=O)(=O)Cl", "inchikey": "QARBMVPHQWIHKH-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}, {"smiles": "Nc1ccc(-n2nccn2)nc1", "inchikey": "POAADVIZZNCRBS-UHFFFAOYSA-N", "synthesis_step": null, "metadata": {}, "is_leaf": true}], "has_convergent_reaction": true, "content_hash": "ff3323fb28ebba47cece80d7628f6f96d1e271023764b073af2063411a4c24f4", "signature": "5cfa34e9b5c614ebfdc190fc1c559f63c5486f8f95572024b3dea60a489856b1"}
+{
+ "target": {
+  "smiles": "CN1[C@H](CNc2ccccc2Nc2ccc(-n3nccn3)nc2)CCS1(=O)=O",
+  "inchikey": "VBPPQCFXVOIEKV-HNNXBMFYSA-N",
+  "product_of": {
+   "reactants": [
+    {
+     "smiles": "Nc1ccccc1Nc1ccc(-n2nccn2)nc1",
+     "inchikey": "HCQQEOKSRQGILC-UHFFFAOYSA-N",
+     "product_of": {
+      "reactants": [
+       {
+        "smiles": "O=[N+]([O-])c1ccccc1Nc1ccc(-n2nccn2)nc1",
+        "inchikey": "KANHIRKLWSDYES-UHFFFAOYSA-N",
+        "product_of": {
+         "reactants": [
+          {
+           "smiles": "Nc1ccc(-n2nccn2)nc1",
+           "inchikey": "POAADVIZZNCRBS-UHFFFAOYSA-N",
+           "product_of": null,
+           "annotations": {}
+          },
+          {
+           "smiles": "O=[N+]([O-])c1ccccc1F",
+           "inchikey": "PWKNBLFSJAVFAB-UHFFFAOYSA-N",
+           "product_of": null,
+           "annotations": {}
+          }
+         ],
+         "mapped_reaction_smiles": null,
+         "template": null,
+         "reagents": null,
+         "solvents": null,
+         "annotations": {}
+        },
+        "annotations": {}
+       }
+      ],
+      "mapped_reaction_smiles": null,
+      "template": null,
+      "reagents": null,
+      "solvents": null,
+      "annotations": {}
+     },
+     "annotations": {}
+    },
+    {
+     "smiles": "CN1[C@H](C=O)CCS1(=O)=O",
+     "inchikey": "VXELUBVHBGIESE-YFKPBYRVSA-N",
+     "product_of": {
+      "reactants": [
+       {
+        "smiles": "CN1[C@H](CO)CCS1(=O)=O",
+        "inchikey": "GPEFZKYJMOJXNN-YFKPBYRVSA-N",
+        "product_of": {
+         "reactants": [
+          {
+           "smiles": "CN1[C@H](COCc2ccccc2)CCS1(=O)=O",
+           "inchikey": "IXIPNVZVOFKPJV-LBPRGKRZSA-N",
+           "product_of": {
+            "reactants": [
+             {
+              "smiles": "CI",
+              "inchikey": "INQOMBQAUSQDDS-UHFFFAOYSA-N",
+              "product_of": null,
+              "annotations": {}
+             },
+             {
+              "smiles": "O=S1(=O)CC[C@@H](COCc2ccccc2)N1",
+              "inchikey": "ZCRRABZFLYWNOM-NSHDSACASA-N",
+              "product_of": {
+               "reactants": [
+                {
+                 "smiles": "CS(=O)(=O)Cl",
+                 "inchikey": "QARBMVPHQWIHKH-UHFFFAOYSA-N",
+                 "product_of": null,
+                 "annotations": {}
+                },
+                {
+                 "smiles": "N[C@@H](CO)COCc1ccccc1",
+                 "inchikey": "ZJUOMDNENVWMPL-JTQLQIEISA-N",
+                 "product_of": null,
+                 "annotations": {}
+                }
+               ],
+               "mapped_reaction_smiles": null,
+               "template": null,
+               "reagents": null,
+               "solvents": null,
+               "annotations": {}
+              },
+              "annotations": {}
+             }
+            ],
+            "mapped_reaction_smiles": null,
+            "template": null,
+            "reagents": null,
+            "solvents": null,
+            "annotations": {}
+           },
+           "annotations": {}
+          }
+         ],
+         "mapped_reaction_smiles": null,
+         "template": null,
+         "reagents": null,
+         "solvents": null,
+         "annotations": {}
+        },
+        "annotations": {}
+       }
+      ],
+      "mapped_reaction_smiles": null,
+      "template": null,
+      "reagents": null,
+      "solvents": null,
+      "annotations": {}
+     },
+     "annotations": {}
+    }
+   ],
+   "mapped_reaction_smiles": null,
+   "template": null,
+   "reagents": null,
+   "solvents": null,
+   "annotations": {}
+  },
+  "annotations": {}
+ },
+ "annotations": {},
+ "schema_version": "2"
+}
