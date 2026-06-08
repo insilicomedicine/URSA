@@ -1,6 +1,6 @@
 __pypackages__/
 __pycache__/
-*$py.clss
+*$py.class
 *.c
 *.py[cod]
 *.so

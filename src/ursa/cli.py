@@ -5,18 +5,18 @@ import gzip
 import json
 import logging
 import sys
-import tempfile
 from pathlib import Path
-from typing import cast
 
-from retrocast.adapters.factory import get_adapter
-from retrocast.api import load_routes
-from retrocast.io import save_routes
-from retrocast.models.chem import TargetIdentity
-from retrocast.models.chem import TargetInput
+from retrocast import adapt_routes
+from retrocast import chem
+from retrocast import get_adapter
+from retrocast import Target
+from retrocast.exceptions import ChemError
+from retrocast.io import load_collected_routes
 
 from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
+from ursa.errors import InvalidTargetKeyError
 
 _BUILTIN_BENCHMARKS = ("EXPERT_2026", "DRUGS_CLINICALS_2026", "USPTO_190")
 
@@ -148,23 +148,54 @@ def _build_parser() -> argparse.ArgumentParser:
 def _load_routes(routes_path: str) -> dict:
     """Load already-adapted RetroCast routes from a ``.json.gz`` file.
 
+    Expects a *collected routes* archive (schema 2) as written by
+    :func:`retrocast.io.save_collected_routes`: a JSON object mapping each
+    target id to a list of :class:`~retrocast.Route` objects.
+
     :param routes_path: Path to a routes archive produced by RetroCast.
     :type routes_path: str
 
     :return: RetroCast routes dict keyed by target identifier.
     :rtype: dict
     """
-    from retrocast.api import load_routes
+    return load_collected_routes(Path(routes_path))
 
-    return load_routes(Path(routes_path))
+
+def _make_target(key: str) -> Target | None:
+    """Build a RetroCast :class:`~retrocast.Target` from a raw input key.
+
+    The raw predictions file is keyed by target SMILES, so the key is used
+    as the target id while its canonical form is used as the SMILES. The
+    InChIKey is derived from the SMILES. Returns ``None`` when the key is
+    not a valid SMILES, in which case the adapter falls back to deriving
+    the target from each raw route.
+
+    :param key: Target identifier / SMILES from the raw predictions file.
+    :type key: str
+
+    :return: A populated :class:`~retrocast.Target`, or ``None``.
+    :rtype: retrocast.Target | None
+    """
+    try:
+        try:
+            return Target(
+                id=key,
+                smiles=chem.canonicalize_smiles(key),
+                inchikey=chem.get_inchi_key(key),
+            )
+        except ChemError as exc:
+            raise InvalidTargetKeyError(key) from exc
+    except InvalidTargetKeyError:
+        return None
 
 
 def _adapt_and_load(raw_path: str, adapter_name: str) -> dict:
-    """Adapt raw model predictions into RetroCast routes and load them.
+    """Adapt raw model predictions into RetroCast routes and group them.
 
-    Reads a gzipped JSON object keyed by target SMILES/ID, runs the
-    named RetroCast adapter over each entry, writes the adapted routes
-    to a temporary archive, and returns the loaded dict.
+    Reads a gzipped JSON object keyed by target SMILES/ID and runs the
+    named RetroCast adapter over each entry via
+    :func:`retrocast.adapt_routes`, which validates and canonicalises the
+    routes. Returns the adapted routes grouped by their original key.
 
     :param raw_path: Path to the raw ``.json.gz`` predictions file.
     :type raw_path: str
@@ -190,16 +221,11 @@ def _adapt_and_load(raw_path: str, adapter_name: str) -> dict:
 
     routes: dict = {}
     for key, payload in raw_data.items():
-        target = TargetInput(id=str(key), smiles=str(key))
-        adapted = list(adapter.cast(payload, target=cast(TargetIdentity, target)))
+        adapted = adapt_routes(payload, adapter, target=_make_target(str(key)))
         if adapted:
             routes[key] = adapted
 
-    with tempfile.NamedTemporaryFile(suffix=".json.gz", delete=False) as tmp:
-        tmp_path = tmp.name
-
-    save_routes(routes, Path(tmp_path))
-    return load_routes(Path(tmp_path))
+    return routes
 
 
 def _routes_to_paths(routes_dict: dict):
@@ -219,13 +245,13 @@ def _routes_to_paths(routes_dict: dict):
         """Recursively convert a RetroCast molecule into a :class:`RetrosyntheticNode`.
 
         :param mol: RetroCast molecule node with an optional
-            ``synthesis_step`` containing ``reactants``.
+            ``product_of`` reaction containing ``reactants``.
         :return: Fully populated :class:`RetrosyntheticNode`.
         :rtype: RetrosyntheticNode
         """
-        if mol.synthesis_step is None:
+        if mol.product_of is None:
             return RetrosyntheticNode(smiles=mol.smiles)
-        children = tuple(mol_to_node(r) for r in mol.synthesis_step.reactants)
+        children = tuple(mol_to_node(r) for r in mol.product_of.reactants)
         return RetrosyntheticNode(smiles=mol.smiles, children=children)
 
     paths = []

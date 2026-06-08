@@ -99,22 +99,20 @@ class RetrosyntheticPath:
         """Construct a :class:`RetrosyntheticPath` from a RetroCast JSON route.
 
         The top-level object contains a ``target`` molecule with a recursive
-        ``synthesis_step`` / ``reactants`` tree. Example::
+        ``product_of`` / ``reactants`` tree (RetroCast schema 2). Example::
 
             {
                 "target": {
                     "smiles": "<target SMILES>",
                     "inchikey": "<InChIKey>",
-                    "synthesis_step": {
+                    "product_of": {
                         "reactants": [ { ... }, ... ]
-                    },
-                    "is_leaf": false
+                    }
                 },
-                "rank": 1,
-                "length": 3
+                "schema_version": "2"
             }
 
-        Extra keys (``rank``, ``length``, ``leaves``, etc.) are ignored.
+        Extra keys (``annotations``, ``schema_version``, etc.) are ignored.
 
         :param data: Parsed RetroCast route dict containing a ``target`` key.
         :type data: dict
