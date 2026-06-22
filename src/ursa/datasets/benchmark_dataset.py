@@ -5,9 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
 
-_DATASETS_DIR = (
-    Path(__file__).parent.parent.parent.parent / "data" / "URSA_benchmarking_sets"
-)
+from ..configs.data_config import DataConfig
+from ..data.benchmark_sets import ensure_benchmark_csv
 
 
 @dataclass(frozen=True)
@@ -50,7 +49,6 @@ class BenchmarkDataset:
 
     EXPERT_2026: ClassVar[BenchmarkDataset]
     DRUGS_CLINICALS_2026: ClassVar[BenchmarkDataset]
-    USPTO_190: ClassVar[BenchmarkDataset]
 
     def __init__(
         self,
@@ -94,7 +92,8 @@ class BenchmarkDataset:
         :rtype: tuple[TargetEntry, ...]
         """
         entries: list[TargetEntry] = []
-        with open(self._path, newline="") as f:
+        path = ensure_benchmark_csv(self._path)
+        with open(path, newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 entries.append(
@@ -118,19 +117,13 @@ class BenchmarkDataset:
 # ── Bundled presets ───────────────────────────────────────────────────────────
 
 BenchmarkDataset.EXPERT_2026 = BenchmarkDataset(
-    _DATASETS_DIR / "URSA-expert-2026.csv",
+    DataConfig.benchmark_sets_dir / "URSA-expert-2026.csv",
     id_col="Structure ID",
     smiles_col="SMILES",
 )
 
 BenchmarkDataset.DRUGS_CLINICALS_2026 = BenchmarkDataset(
-    _DATASETS_DIR / "URSA-drugs-clinicals-2026.csv",
-    id_col="Structure ID",
-    smiles_col="SMILES",
-)
-
-BenchmarkDataset.USPTO_190 = BenchmarkDataset(
-    _DATASETS_DIR / "Uspto-190.csv",
+    DataConfig.benchmark_sets_dir / "URSA-drugs-clinicals-2026.csv",
     id_col="Structure ID",
     smiles_col="SMILES",
 )

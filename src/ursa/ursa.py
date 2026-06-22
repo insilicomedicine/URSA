@@ -75,9 +75,14 @@ class Ursa:
         if scorer is None:
             from chemcensor import ChemCensor
 
-            scorer = ChemCensor(db_path=DataConfig.chemcensor_db_path)
+            from .data.chemcensor_db import ensure_chemcensor_db
+
+            db_path = ensure_chemcensor_db(DataConfig.chemcensor_db_path)
+            scorer = ChemCensor(db_path=db_path)
         if bb_catalog_path is None:
-            bb_catalog_path = DataConfig.bb_catalog_path
+            from .data.bb_catalog import ensure_bb_catalog
+
+            bb_catalog_path = ensure_bb_catalog(DataConfig.bb_catalog_path)
         self._consistency_checker = PathConsistencyChecker()
         self._bb_checker = BuildingBlockChecker.from_file(bb_catalog_path)
         self._collapser = PathCollapser()

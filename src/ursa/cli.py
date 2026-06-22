@@ -18,7 +18,7 @@ from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
 from ursa.errors import InvalidTargetKeyError
 
-_BUILTIN_BENCHMARKS = ("EXPERT_2026", "DRUGS_CLINICALS_2026", "USPTO_190")
+_BUILTIN_BENCHMARKS = ("EXPERT_2026", "DRUGS_CLINICALS_2026")
 
 
 class _CliFormatter(logging.Formatter):
@@ -141,6 +141,15 @@ def _build_parser() -> argparse.ArgumentParser:
         default="SMILES",
         metavar="COL",
         help="SMILES column name for custom benchmark CSV (default: 'SMILES').",
+    )
+    p.add_argument(
+        "--bb-catalog",
+        metavar="BB_CATALOG",
+        help=(
+            "Path to a building-block catalog (CSV with a 'smiles' column, "
+            "or plain text with one SMILES per line). "
+            "Defaults to the URSA catalog from HuggingFace."
+        ),
     )
     return p
 
@@ -266,8 +275,8 @@ def _routes_to_paths(routes_dict: dict):
 def _load_benchmark(benchmark: str, id_col: str, smiles_col: str):
     """Resolve a benchmark name or CSV path to a :class:`BenchmarkDataset`.
 
-    Built-in names (``EXPERT_2026``, ``DRUGS_CLINICALS_2026``,
-    ``USPTO_190``) are returned as the bundled presets; anything else is
+    Built-in names (``EXPERT_2026``, ``DRUGS_CLINICALS_2026``) are returned as
+    the bundled presets; anything else is
     treated as a CSV path and loaded via
     :meth:`BenchmarkDataset.from_csv`. Exits with code 1 if the value is
     neither a known preset nor an existing file.
@@ -288,8 +297,6 @@ def _load_benchmark(benchmark: str, id_col: str, smiles_col: str):
         return BenchmarkDataset.EXPERT_2026
     if benchmark == "DRUGS_CLINICALS_2026":
         return BenchmarkDataset.DRUGS_CLINICALS_2026
-    if benchmark == "USPTO_190":
-        return BenchmarkDataset.USPTO_190
 
     csv_path = Path(benchmark)
     if not csv_path.exists():
@@ -327,7 +334,17 @@ def main(argv: list[str] | None = None) -> None:
     from ursa import Ursa
 
     print("Scoring...")
-    ursa = Ursa()
+    if args.bb_catalog:
+        bb_path = Path(args.bb_catalog)
+        if not bb_path.exists():
+            print(
+                f"error: building-block catalog not found: {args.bb_catalog}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        ursa = Ursa(bb_catalog_path=bb_path)
+    else:
+        ursa = Ursa()
     result = ursa.score_dataset(paths, target_smiles=target_smiles)
 
     m = result.metrics

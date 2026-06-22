@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -138,6 +139,14 @@ class TestTargetSmiles:
         assert BenchmarkDataset.from_csv(csv_path).target_smiles == ()
 
 
+def _write_benchmark_csv(path: Path, rows: int) -> None:
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["Structure ID", "SMILES"])
+        writer.writeheader()
+        for i in range(rows):
+            writer.writerow({"Structure ID": f"id{i}", "SMILES": "CC"})
+
+
 # ── TestBundledPresets ────────────────────────────────────────────────────────
 
 
@@ -147,7 +156,6 @@ class TestBundledPresets:
         [
             ("EXPERT_2026", 100),
             ("DRUGS_CLINICALS_2026", 100),
-            ("USPTO_190", 190),
         ],
     )
     def test_preset_is_benchmark_dataset(self, attr, expected_len):
@@ -159,28 +167,35 @@ class TestBundledPresets:
         [
             ("EXPERT_2026", 100),
             ("DRUGS_CLINICALS_2026", 100),
-            ("USPTO_190", 190),
         ],
     )
-    def test_preset_loads_correct_row_count(self, attr, expected_len):
+    @patch("ursa.datasets.benchmark_dataset.ensure_benchmark_csv")
+    def test_preset_loads_correct_row_count(
+        self, mock_ensure, attr, expected_len, tmp_path: Path
+    ):
         ds = getattr(BenchmarkDataset, attr)
-        if not ds._path.exists():
-            pytest.skip(f"Bundled file not found: {ds._path}")
+        csv_path = tmp_path / ds._path.name
+        _write_benchmark_csv(csv_path, expected_len)
+        mock_ensure.return_value = csv_path
         assert len(ds.load()) == expected_len
 
-    @pytest.mark.parametrize(
-        "attr", ["EXPERT_2026", "DRUGS_CLINICALS_2026", "USPTO_190"]
-    )
-    def test_preset_entries_have_non_empty_ids_and_smiles(self, attr):
+    @pytest.mark.parametrize("attr", ["EXPERT_2026", "DRUGS_CLINICALS_2026"])
+    @patch("ursa.datasets.benchmark_dataset.ensure_benchmark_csv")
+    def test_preset_entries_have_non_empty_ids_and_smiles(
+        self, mock_ensure, attr, tmp_path: Path
+    ):
         ds = getattr(BenchmarkDataset, attr)
-        if not ds._path.exists():
-            pytest.skip(f"Bundled file not found: {ds._path}")
+        csv_path = tmp_path / ds._path.name
+        _write_benchmark_csv(csv_path, 3)
+        mock_ensure.return_value = csv_path
         for entry in ds.load():
             assert entry.id
             assert entry.smiles
 
-    def test_preset_target_smiles_length(self):
+    @patch("ursa.datasets.benchmark_dataset.ensure_benchmark_csv")
+    def test_preset_target_smiles_length(self, mock_ensure, tmp_path: Path):
         ds = BenchmarkDataset.EXPERT_2026
-        if not ds._path.exists():
-            pytest.skip(f"Bundled file not found: {ds._path}")
+        csv_path = tmp_path / ds._path.name
+        _write_benchmark_csv(csv_path, 100)
+        mock_ensure.return_value = csv_path
         assert len(ds.target_smiles) == 100
