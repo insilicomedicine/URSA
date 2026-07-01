@@ -4,7 +4,7 @@ version = "1.0.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "chemcensor>=1.1.1",
+    "chemcensor>=1.1.2",
     "frozendict==2.4.6",
     "huggingface-hub>=0.26.0",
     "numpy==1.26.4",
@@ -77,4 +77,4 @@ where = ["src"]
 ursa = ["**/*.so"]
 
 [tool.uv.sources]
-chemcensor = { git = "https://github.com/insilicomedicine/ChemCensor.git", tag = "v1.1.1" }
+chemcensor = { git = "https://github.com/insilicomedicine/ChemCensor.git", tag = "v1.1.2" }

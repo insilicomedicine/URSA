@@ -359,8 +359,8 @@ wheels = [
 
 [[package]]
 name = "chemcensor"
-version = "1.1.1"
-source = { git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.1.1#dc8022f05c2908763071f53ac488b44b2b31ce61" }
+version = "1.1.2"
+source = { git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.1.2#80020fc36b29466bae7e2d032024da414f828f96" }
 dependencies = [
     { name = "frozendict" },
     { name = "numpy" },
@@ -3150,7 +3150,7 @@ dev = [
 requires-dist = [
     { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.8.6" },
     { name = "black", marker = "extra == 'dev'", specifier = "==25.1.0" },
-    { name = "chemcensor", git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.1.1" },
+    { name = "chemcensor", git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.1.2" },
     { name = "flake8", marker = "extra == 'dev'", specifier = "==7.0.0" },
     { name = "frozendict", specifier = "==2.4.6" },
     { name = "huggingface-hub", specifier = ">=0.26.0" },
