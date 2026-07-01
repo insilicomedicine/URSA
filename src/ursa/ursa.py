@@ -110,7 +110,7 @@ class Ursa:
         all_bb_found = all(bb.found_in_catalog for bb in starting_materials)
 
         variants = self._collapser.collapse(path)
-        variant_results = tuple(self._path_scorer.score(v) for v in variants)
+        variant_results = self._path_scorer.score_variants(variants)
         best_variant = self._selector.select(variant_results)
 
         is_route_solved = (
