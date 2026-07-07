@@ -48,4 +48,5 @@ dev.ipynb
 chemcensor/
 data/building_blocks/
 data/chemcensor_db/
+data/URSA_benchmarking_sets/
 data/results/

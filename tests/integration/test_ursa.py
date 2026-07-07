@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-
 from chemcensor import ChemCensor
+
 from ursa import DatasetResult
 from ursa import PathResult
 from ursa import Ursa
@@ -134,41 +134,51 @@ class TestScoreBuildingBlocks:
         assert len(result.starting_materials) == expected
 
 
-# ── Ursa.score: is_route_solved ───────────────────────────────────────────────
+# ── Ursa.score: passes_solv_2 ─────────────────────────────────────────────────
 
 
-class TestScoreIsRouteSolved:
+class TestScorePassesSolv2:
     def test_solved_when_consistent_bb_found_all_steps_pass(
         self, ursa_all_bb_found, path_in_db
     ):
         result = ursa_all_bb_found.score(path_in_db)
-        # path_in_db uses _RXN_IN_DB (exact match, score 5.0 → passed)
-        assert result.is_route_solved is True
+        # path_in_db uses _RXN_IN_DB (exact match, score 5.0 → passes)
+        assert result.passes_solv_2 is True
 
     def test_not_solved_when_bb_missing(self, ursa_no_bb_found, path_in_db):
         result = ursa_no_bb_found.score(path_in_db)
-        assert result.is_route_solved is False
+        assert result.passes_solv_2 is False
+        assert result.passes_solv_0 is False
 
     def test_not_solved_when_step_fails(self, scorer, tmp_path, path_not_in_db):
         leaves = [n.canonical_smiles for n in path_not_in_db.get_starting_materials()]
         catalog = _catalog_file(tmp_path, leaves)
         ursa = Ursa(scorer=scorer, bb_catalog_path=catalog)
         result = ursa.score(path_not_in_db)
-        # _RXN_NOT_IN_DB scores 0.0 → step fails → not solved
-        assert result.is_route_solved is False
+        # _RXN_NOT_IN_DB scores 0.0 → step fails → Solv-2 fails
+        assert result.passes_solv_2 is False
+        # Stock termination (Solv-0) still holds since BBs are in the catalog
+        assert result.passes_solv_0 is True
 
 
-# ── Ursa.score: best_variant ──────────────────────────────────────────────────
+# ── Ursa.score: best variant ──────────────────────────────────────────────────
 
 
 class TestScoreBestVariant:
     def test_best_variant_score_in_db(self, ursa_all_bb_found, path_in_db):
         result = ursa_all_bb_found.score(path_in_db)
-        assert result.best_variant.step_results[0].score == pytest.approx(5.0)
+        step = result.best_variant_solv_2.step_results[0]
+        assert step.score_with_fg == pytest.approx(5.0)
 
-    def test_best_variant_score_not_in_db(self, ursa_no_bb_found, path_not_in_db):
-        result = ursa_no_bb_found.score(path_not_in_db)
-        assert result.best_variant.step_results[0].score == pytest.approx(0.0)
+    def test_best_variant_score_not_in_db(self, scorer, tmp_path, path_not_in_db):
+        # BBs in catalog so Solv-0 passes and the route is actually scored;
+        # the reaction is not in the DB, so its step score is 0.0.
+        leaves = [n.canonical_smiles for n in path_not_in_db.get_starting_materials()]
+        catalog = _catalog_file(tmp_path, leaves)
+        ursa = Ursa(scorer=scorer, bb_catalog_path=catalog)
+        result = ursa.score(path_not_in_db)
+        step = result.best_variant_solv_2.step_results[0]
+        assert step.score_with_fg == pytest.approx(0.0)
 
 
 # ── Ursa.score_dataset ────────────────────────────────────────────────────────
@@ -191,13 +201,13 @@ class TestScoreDataset:
         result = ursa_all_bb_found.score_dataset([path_in_db], total_molecules=10)
         assert result.metrics.total_molecules == 10
 
-    def test_solved_routes_count(self, scorer, tmp_path, path_in_db, path_not_in_db):
+    def test_routes_solv_2_count(self, scorer, tmp_path, path_in_db, path_not_in_db):
         leaves = [n.canonical_smiles for n in path_in_db.get_starting_materials()]
         catalog = _catalog_file(tmp_path, leaves)
         ursa = Ursa(scorer=scorer, bb_catalog_path=catalog)
         result = ursa.score_dataset([path_in_db, path_not_in_db], total_molecules=2)
         # path_in_db: solved; path_not_in_db: not solved (step fails)
-        assert result.metrics.solved_routes == 1
+        assert result.metrics.routes_solv_2 == 1
 
     def test_solv_2(self, scorer, tmp_path, path_in_db, path_not_in_db):
         leaves = [n.canonical_smiles for n in path_in_db.get_starting_materials()]
@@ -209,7 +219,7 @@ class TestScoreDataset:
     def test_empty_dataset(self, ursa_all_bb_found):
         result = ursa_all_bb_found.score_dataset([])
         assert result.metrics.total_molecules == 0
-        assert result.metrics.solved_routes == 0
+        assert result.metrics.routes_solv_2 == 0
         assert result.metrics.solv_2 == pytest.approx(0.0)
 
 
@@ -256,7 +266,7 @@ class TestScoreDatasetWithTargets:
             target_smiles=[product_in_db, "CCCO"],
         )
         # 1 solved out of 2 targets
-        assert result.metrics.solv_2 == pytest.approx(result.metrics.solved_routes / 2)
+        assert result.metrics.solv_2 == pytest.approx(result.metrics.routes_solv_2 / 2)
 
     def test_multiple_paths_same_target_best_kept(
         self, scorer, tmp_path, path_in_db, path_not_in_db
@@ -283,6 +293,6 @@ class TestScoreDatasetWithTargets:
         )
         assert len(result.path_results) == 1
         # The good path should have been selected (exact match score)
-        assert result.path_results[0].best_variant.step_results[
+        assert result.path_results[0].best_variant_solv_2.step_results[
             0
-        ].score == pytest.approx(5.0)
+        ].score_with_fg == pytest.approx(5.0)

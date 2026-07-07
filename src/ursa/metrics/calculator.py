@@ -3,13 +3,12 @@ from ..basic import PathResult
 
 
 class DatasetMetricsCalculator:
-    """Computes aggregate metrics over a dataset of evaluated paths.
+    """Computes aggregate Solv-0/1/2 metrics over a dataset of evaluated paths.
 
     Aggregates per-path :class:`~ursa.PathResult` objects into a single
-    :class:`~ursa.DatasetMetrics` instance. The ``total_molecules``
-    parameter allows computing ``solv_2`` relative to the
-    full input dataset (including molecules for which no route was
-    provided).
+    :class:`~ursa.DatasetMetrics`. The ``total_molecules`` parameter is
+    the denominator for every ``solv_N`` rate, so targets for which no
+    route was provided correctly lower the rates.
     """
 
     def calculate(
@@ -19,39 +18,52 @@ class DatasetMetricsCalculator:
     ) -> DatasetMetrics:
         """Compute dataset-level metrics from ``path_results``.
 
-        Counts solved routes, passed/total steps and derives
-        ``solv_2`` and ``mean_chemcensor_score``.
-
         :param path_results: Per-path evaluation results to aggregate.
         :type path_results: tuple[PathResult, ...]
-        :param total_molecules: Total number of molecules in the input
-            dataset, including those without a route. Used as the
-            denominator for ``solv_2``.
+        :param total_molecules: Total number of target molecules in the
+            input dataset, including those without a route. Denominator
+            for every ``solv_N`` rate.
         :type total_molecules: int
 
         :return: Aggregated dataset metrics.
         :rtype: DatasetMetrics
         """
         molecules_with_route = len(path_results)
-        solved_routes = sum(1 for pr in path_results if pr.is_route_solved)
+        routes_no_synthesis = sum(1 for pr in path_results if pr.is_no_synthesis)
+        routes_solv_0 = sum(1 for pr in path_results if pr.passes_solv_0)
+        routes_solv_1 = sum(1 for pr in path_results if pr.passes_solv_1)
+        routes_solv_2 = sum(1 for pr in path_results if pr.passes_solv_2)
 
-        all_step_results = [
-            sr for pr in path_results for sr in pr.best_variant.step_results
+        def _rate(count: int) -> float:
+            return count / total_molecules if total_molecules > 0 else 0.0
+
+        steps_without_fg = [
+            sr.score_without_fg
+            for pr in path_results
+            for sr in pr.best_variant_solv_1.step_results
         ]
-        total_steps = len(all_step_results)
-        passed_steps = sum(1 for sr in all_step_results if sr.score > 0)
-
-        solv_2 = solved_routes / total_molecules if total_molecules > 0 else 0.0
-
-        sum_scores = sum(sr.score for sr in all_step_results)
-        mean_chemcensor_score = sum_scores / total_steps if total_steps > 0 else 0.0
+        steps_with_fg = [
+            sr.score_with_fg
+            for pr in path_results
+            for sr in pr.best_variant_solv_2.step_results
+        ]
+        mean_score_without_fg = (
+            sum(steps_without_fg) / len(steps_without_fg) if steps_without_fg else 0.0
+        )
+        mean_score_with_fg = (
+            sum(steps_with_fg) / len(steps_with_fg) if steps_with_fg else 0.0
+        )
 
         return DatasetMetrics(
             total_molecules=total_molecules,
             molecules_with_route=molecules_with_route,
-            solved_routes=solved_routes,
-            passed_steps=passed_steps,
-            total_steps=total_steps,
-            solv_2=solv_2,
-            mean_chemcensor_score=mean_chemcensor_score,
+            routes_no_synthesis=routes_no_synthesis,
+            routes_solv_0=routes_solv_0,
+            routes_solv_1=routes_solv_1,
+            routes_solv_2=routes_solv_2,
+            solv_0=_rate(routes_solv_0),
+            solv_1=_rate(routes_solv_1),
+            solv_2=_rate(routes_solv_2),
+            mean_score_without_fg=mean_score_without_fg,
+            mean_score_with_fg=mean_score_with_fg,
         )

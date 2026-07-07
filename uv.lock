@@ -359,8 +359,8 @@ wheels = [
 
 [[package]]
 name = "chemcensor"
-version = "1.1.1"
-source = { editable = "chemcensor" }
+version = "1.2.0"
+source = { git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.2.0#8990083aa815fbd71daa63f07f5a0c7c469f9850" }
 dependencies = [
     { name = "frozendict" },
     { name = "numpy" },
@@ -369,37 +369,6 @@ dependencies = [
     { name = "tqdm" },
     { name = "transformers" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "bandit", marker = "extra == 'dev'", specifier = "==1.8.0" },
-    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.8.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = "==25.1.0" },
-    { name = "flake8", marker = "extra == 'dev'", specifier = "==7.0.0" },
-    { name = "frozendict", specifier = "==2.4.6" },
-    { name = "jupyterlab", marker = "extra == 'dev'", specifier = "==4.2.1" },
-    { name = "lazy-object-proxy", marker = "extra == 'dev'", specifier = "==1.11.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = "==1.10.0" },
-    { name = "numpy", specifier = "==1.26.4" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==8.0.0" },
-    { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = "==4.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==6.0.0" },
-    { name = "pytest-dotenv", marker = "extra == 'dev'", specifier = "==0.5.2" },
-    { name = "pytest-lazy-fixtures", marker = "extra == 'dev'", specifier = "==1.1.2" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = "==3.12.0" },
-    { name = "pytest-runner", marker = "extra == 'dev'", specifier = "==6.0.0" },
-    { name = "rdkit", specifier = ">=2025.3.5,<2026.0.0" },
-    { name = "rxnmapper", specifier = "==0.4.2" },
-    { name = "sphinx", marker = "extra == 'dev'", specifier = "==8.0.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = "==3.0.0" },
-    { name = "tqdm", specifier = ">=4.67.1" },
-    { name = "transformers", specifier = "==4.57.6" },
-    { name = "types-frozendict", marker = "extra == 'dev'", specifier = "==2.0.9" },
-    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = "==6.0.12.2" },
-    { name = "typing-extensions", marker = "extra == 'dev'", specifier = "==4.14.1" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "click"
@@ -3143,11 +3112,12 @@ wheels = [
 
 [[package]]
 name = "ursa"
-version = "0.2.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "chemcensor" },
     { name = "frozendict" },
+    { name = "huggingface-hub" },
     { name = "numpy" },
     { name = "rdkit" },
     { name = "retrocast" },
@@ -3180,9 +3150,10 @@ dev = [
 requires-dist = [
     { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.8.6" },
     { name = "black", marker = "extra == 'dev'", specifier = "==25.1.0" },
-    { name = "chemcensor", editable = "chemcensor" },
+    { name = "chemcensor", git = "https://github.com/insilicomedicine/ChemCensor.git?tag=v1.2.0" },
     { name = "flake8", marker = "extra == 'dev'", specifier = "==7.0.0" },
     { name = "frozendict", specifier = "==2.4.6" },
+    { name = "huggingface-hub", specifier = ">=0.26.0" },
     { name = "jupyterlab", marker = "extra == 'dev'", specifier = "==4.2.1" },
     { name = "lazy-object-proxy", marker = "extra == 'dev'", specifier = "==1.11.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.10.0" },

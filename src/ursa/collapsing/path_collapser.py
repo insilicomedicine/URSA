@@ -61,16 +61,53 @@ class PathCollapser:
         adjacency = self._build_adjacency(path)
         combinations = self._generate_valid_combinations(skippable, adjacency)
 
+        skippable_smiles = frozenset(n.canonical_smiles for n in skippable)
+        descendants = self._build_descendant_map(path.root, skippable_smiles)
+
         seen: set[RetrosyntheticPath] = {path}
         result: list[RetrosyntheticPath] = [path]
 
         for combination in combinations:
-            collapsed = self._apply_collapse(path, combination)
+            collapsed = self._apply_collapse(path, combination, descendants)
             if collapsed not in seen:
                 seen.add(collapsed)
                 result.append(collapsed)
 
         return tuple(result)
+
+    def _build_descendant_map(
+        self,
+        root: RetrosyntheticNode,
+        skippable_smiles: frozenset[str],
+    ) -> dict[int, frozenset[str]]:
+        """Map each node to the skippable SMILES present in its subtree.
+
+        Lets :meth:`_rebuild_node` short-circuit (and avoid recursing into)
+        subtrees that contain nothing from the current collapse set.
+
+        :param root: Root node of the tree to index.
+        :type root: RetrosyntheticNode
+        :param skippable_smiles: Canonical SMILES of all skippable nodes.
+        :type skippable_smiles: frozenset[str]
+
+        :return: Mapping from ``id(node)`` to the frozenset of skippable
+            canonical SMILES contained in that node's subtree.
+        :rtype: dict[int, frozenset[str]]
+        """
+        mapping: dict[int, frozenset[str]] = {}
+
+        def visit(node: RetrosyntheticNode) -> frozenset[str]:
+            acc: set[str] = set()
+            for child in node.children:
+                acc |= visit(child)
+                if child.canonical_smiles in skippable_smiles:
+                    acc.add(child.canonical_smiles)
+            result = frozenset(acc)
+            mapping[id(node)] = result
+            return result
+
+        visit(root)
+        return mapping
 
     def _build_adjacency(self, path: RetrosyntheticPath) -> dict[str, list[str]]:
         """Build a molecule-level adjacency map for the tree.
@@ -173,6 +210,7 @@ class PathCollapser:
         self,
         path: RetrosyntheticPath,
         combination: tuple[RetrosyntheticNode, ...],
+        descendants: dict[int, frozenset[str]],
     ) -> RetrosyntheticPath:
         """Apply a collapse combination and return the modified path.
 
@@ -184,19 +222,23 @@ class PathCollapser:
         :type path: RetrosyntheticPath
         :param combination: Nodes to collapse simultaneously.
         :type combination: tuple[RetrosyntheticNode, ...]
+        :param descendants: Map from ``id(node)`` to the skippable SMILES
+            in its subtree, from :meth:`_build_descendant_map`.
+        :type descendants: dict[int, frozenset[str]]
 
         :return: A new :class:`RetrosyntheticPath` with the specified
             intermediates removed.
         :rtype: RetrosyntheticPath
         """
         to_collapse = frozenset(n.canonical_smiles for n in combination)
-        new_root = self._rebuild_node(path.root, to_collapse)
+        new_root = self._rebuild_node(path.root, to_collapse, descendants)
         return RetrosyntheticPath(path_id=path.path_id, root=new_root)
 
     def _rebuild_node(
         self,
         node: RetrosyntheticNode,
         to_collapse: frozenset[str],
+        descendants: dict[int, frozenset[str]],
     ) -> RetrosyntheticNode:
         """Rebuild ``node`` with every molecule in ``to_collapse`` bypassed.
 
@@ -209,17 +251,27 @@ class PathCollapser:
         :param to_collapse: Canonical SMILES of intermediate molecules
             to remove.
         :type to_collapse: frozenset[str]
+        :param descendants: Map from ``id(node)`` to the skippable SMILES
+            in its subtree, used to skip untouched subtrees.
+        :type descendants: dict[int, frozenset[str]]
 
         :return: New subtree root with the chosen intermediates removed.
         :rtype: RetrosyntheticNode
         """
         if not node.children:
             return node
+        # Nothing in this subtree is being collapsed: the result is
+        # structurally identical, so reuse the immutable node and skip the
+        # recursion entirely.
+        if to_collapse.isdisjoint(descendants[id(node)]):
+            return node
         new_children: list[RetrosyntheticNode] = []
         for child in node.children:
             if child.canonical_smiles in to_collapse:
                 for grandchild in child.children:
-                    new_children.append(self._rebuild_node(grandchild, to_collapse))
+                    new_children.append(
+                        self._rebuild_node(grandchild, to_collapse, descendants)
+                    )
             else:
-                new_children.append(self._rebuild_node(child, to_collapse))
+                new_children.append(self._rebuild_node(child, to_collapse, descendants))
         return RetrosyntheticNode(smiles=node.smiles, children=tuple(new_children))

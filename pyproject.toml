@@ -1,11 +1,12 @@
 [project]
 name = "ursa"
-version = "0.2.0"
+version = "1.1.0"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "chemcensor>=1.1.1",
+    "chemcensor>=1.2.0",
     "frozendict==2.4.6",
+    "huggingface-hub>=0.26.0",
     "numpy==1.26.4",
     "rdkit>=2025.3.5",
     "retrocast>=0.7.0",
@@ -75,6 +76,5 @@ where = ["src"]
 [tool.setuptools.package-data]
 ursa = ["**/*.so"]
 
-# TODO: Remove this once ChemCensor is released
 [tool.uv.sources]
-chemcensor = { path = "chemcensor", editable = true }
+chemcensor = { git = "https://github.com/insilicomedicine/ChemCensor.git", tag = "v1.2.0" }
