@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-
 from chemcensor import ChemCensor
+
 from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
 from ursa.basic.result import VariantResult
@@ -75,28 +75,28 @@ class TestScoringInDb:
     def test_exact_match_score(self, chemcensor_scorer):
         path = _make_path(_RXN_IN_DB, path_id="in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.step_results[0].score == pytest.approx(5.0)
+        assert result.step_results[0].score_with_fg == pytest.approx(5.0)
 
-    def test_step_passed(self, chemcensor_scorer):
+    def test_step_passes_solv_2(self, chemcensor_scorer):
         path = _make_path(_RXN_IN_DB, path_id="in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.step_results[0].passed is True
+        assert result.step_results[0].passes_solv_2 is True
 
-    def test_all_steps_passed(self, chemcensor_scorer):
+    def test_all_steps_pass_solv_2(self, chemcensor_scorer):
         path = _make_path(_RXN_IN_DB, path_id="in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.all_steps_passed is True
+        assert result.all_steps_pass_solv_2 is True
 
-    def test_percent_found_is_one(self, chemcensor_scorer):
+    def test_step_passes_solv_1(self, chemcensor_scorer):
         path = _make_path(_RXN_IN_DB, path_id="in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.percent_found == pytest.approx(1.0)
+        assert result.step_results[0].passes_solv_1 is True
 
-    def test_chemcensor_per_route_equals_score(self, chemcensor_scorer):
+    def test_mean_with_fg_equals_step_score(self, chemcensor_scorer):
         path = _make_path(_RXN_IN_DB, path_id="in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.chemcensor_per_route == pytest.approx(
-            result.step_results[0].score
+        assert result.mean_score_with_fg == pytest.approx(
+            result.step_results[0].score_with_fg
         )
 
 
@@ -107,22 +107,22 @@ class TestScoringNotInDb:
     def test_default_score_zero(self, chemcensor_scorer):
         path = _make_path(_RXN_NOT_IN_DB, path_id="not_in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.step_results[0].score == pytest.approx(0.0)
+        assert result.step_results[0].score_with_fg == pytest.approx(0.0)
 
-    def test_step_not_passed(self, chemcensor_scorer):
+    def test_step_not_passes_solv_2(self, chemcensor_scorer):
         path = _make_path(_RXN_NOT_IN_DB, path_id="not_in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.step_results[0].passed is False
+        assert result.step_results[0].passes_solv_2 is False
 
-    def test_all_steps_passed_false(self, chemcensor_scorer):
+    def test_all_steps_pass_solv_2_false(self, chemcensor_scorer):
         path = _make_path(_RXN_NOT_IN_DB, path_id="not_in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.all_steps_passed is False
+        assert result.all_steps_pass_solv_2 is False
 
-    def test_percent_found_is_zero(self, chemcensor_scorer):
+    def test_mean_with_fg_is_zero(self, chemcensor_scorer):
         path = _make_path(_RXN_NOT_IN_DB, path_id="not_in_db")
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.percent_found == pytest.approx(0.0)
+        assert result.mean_score_with_fg == pytest.approx(0.0)
 
 
 # ── negative score normalisation ─────────────────────────────────────────────
@@ -135,14 +135,15 @@ class TestNegativeScoreNormalisation:
         path = RetrosyntheticPath(path_id="invalid", root=root)
         result = PathScorer(chemcensor_scorer).score(path)
         # ChemCensor returns -1.0 for unmappable/invalid reactions
-        assert result.step_results[0].score >= 0.0
+        assert result.step_results[0].score_with_fg >= 0.0
+        assert result.step_results[0].score_without_fg >= 0.0
 
     def test_invalid_smiles_not_passed(self, chemcensor_scorer):
         leaf = RetrosyntheticNode(smiles="C")
         root = RetrosyntheticNode(smiles="CC", children=(leaf,))
         path = RetrosyntheticPath(path_id="invalid", root=root)
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.step_results[0].passed is False
+        assert result.step_results[0].passes_solv_2 is False
 
 
 # ── multi-step path ───────────────────────────────────────────────────────────
@@ -170,8 +171,8 @@ class TestMultiStep:
         result = PathScorer(chemcensor_scorer).score(path)
         assert len(result.step_results) == 2
 
-    def test_mixed_passes_all_steps_passed_false(self, chemcensor_scorer):
-        # One step in DB (pass), one not (fail) → all_steps_passed is False
+    def test_mixed_all_steps_pass_solv_2_false(self, chemcensor_scorer):
+        # One step in DB (pass), one not (fail) → all_steps_pass_solv_2 is False
         reactants_str, product_str = _RXN_IN_DB.split(">>")
         leaves = tuple(
             RetrosyntheticNode(smiles=s.strip())
@@ -186,4 +187,4 @@ class TestMultiStep:
         )
         path = RetrosyntheticPath(path_id="mixed", root=root)
         result = PathScorer(chemcensor_scorer).score(path)
-        assert result.all_steps_passed is False
+        assert result.all_steps_pass_solv_2 is False

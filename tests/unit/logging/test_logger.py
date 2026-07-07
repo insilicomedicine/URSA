@@ -54,15 +54,19 @@ class TestLogStep:
         logger.log_step("p1", sr)
         assert _payload(mock_std_logger)["reaction_smiles"] == sr.node.reaction_smiles
 
-    def test_payload_score(self, logger, mock_std_logger, path_1step):
+    def test_payload_scores(self, logger, mock_std_logger, path_1step):
         vr = make_variant(path_1step, (3.0,))
         logger.log_step("p1", vr.step_results[0])
-        assert _payload(mock_std_logger)["score"] == pytest.approx(3.0)
+        p = _payload(mock_std_logger)
+        assert p["score_without_fg"] == pytest.approx(3.0)
+        assert p["score_with_fg"] == pytest.approx(3.0)
 
-    def test_payload_passed(self, logger, mock_std_logger, path_1step):
+    def test_payload_passes(self, logger, mock_std_logger, path_1step):
         vr = make_variant(path_1step, (3.0,))
         logger.log_step("p1", vr.step_results[0])
-        assert _payload(mock_std_logger)["passed"] is True
+        p = _payload(mock_std_logger)
+        assert p["passes_solv_1"] is True
+        assert p["passes_solv_2"] is True
 
 
 # ── LogVariant ────────────────────────────────────────────────────────────────
@@ -74,22 +78,19 @@ class TestLogVariant:
         logger.log_variant("p3", vr)
         assert _payload(mock_std_logger)["num_steps"] == 3
 
-    def test_payload_percent_found(self, logger, mock_std_logger, path_1step):
-        vr = make_variant(path_1step, (3.0,))
-        logger.log_variant("p1", vr)
-        assert _payload(mock_std_logger)["percent_found"] == pytest.approx(1.0)
-
-    def test_payload_chemcensor_per_route(
-        self, logger, mock_std_logger, path_3step_linear
-    ):
+    def test_payload_mean_scores(self, logger, mock_std_logger, path_3step_linear):
         vr = make_variant(path_3step_linear, (3.0, 1.0, 2.0))
         logger.log_variant("p3", vr)
-        assert _payload(mock_std_logger)["chemcensor_per_route"] == pytest.approx(2.0)
+        p = _payload(mock_std_logger)
+        assert p["mean_score_without_fg"] == pytest.approx(2.0)
+        assert p["mean_score_with_fg"] == pytest.approx(2.0)
 
-    def test_payload_all_steps_passed(self, logger, mock_std_logger, path_1step):
+    def test_payload_all_steps_pass(self, logger, mock_std_logger, path_1step):
         vr = make_variant(path_1step, (3.0,))
         logger.log_variant("p1", vr)
-        assert _payload(mock_std_logger)["all_steps_passed"] is True
+        p = _payload(mock_std_logger)
+        assert p["all_steps_pass_solv_1"] is True
+        assert p["all_steps_pass_solv_2"] is True
 
 
 # ── LogPath ───────────────────────────────────────────────────────────────────
@@ -97,18 +98,9 @@ class TestLogVariant:
 
 class TestLogPath:
     def _make_path_result(self, path, scores):
-        from ursa.basic.building_block import BuildingBlock
-        from ursa.basic.result import PathResult
+        from tests.conftest import make_path_result
 
-        vr = make_variant(path, scores)
-        return PathResult(
-            original_path=path,
-            is_consistent=True,
-            starting_materials=(BuildingBlock(smiles="CC", found_in_catalog=True),),
-            all_bb_found=True,
-            best_variant=vr,
-            is_route_solved=True,
-        )
+        return make_path_result(path, scores)
 
     def test_payload_path_id(self, logger, mock_std_logger, path_1step):
         pr = self._make_path_result(path_1step, (3.0,))
@@ -125,19 +117,21 @@ class TestLogPath:
         logger.log_path(pr)
         assert _payload(mock_std_logger)["all_bb_found"] is True
 
-    def test_payload_is_route_solved(self, logger, mock_std_logger, path_1step):
+    def test_payload_passes_solv_levels(self, logger, mock_std_logger, path_1step):
         pr = self._make_path_result(path_1step, (3.0,))
         logger.log_path(pr)
-        assert _payload(mock_std_logger)["is_route_solved"] is True
+        p = _payload(mock_std_logger)
+        assert p["passes_solv_0"] is True
+        assert p["passes_solv_1"] is True
+        assert p["passes_solv_2"] is True
 
     def test_payload_best_variant_summary(self, logger, mock_std_logger, path_1step):
         pr = self._make_path_result(path_1step, (3.0,))
         logger.log_path(pr)
         p = _payload(mock_std_logger)
         assert "num_steps" in p
-        assert "percent_found" in p
-        assert "chemcensor_per_route" in p
-        assert "all_steps_passed" in p
+        assert "is_no_synthesis" in p
+        assert "mean_score_with_fg" in p
 
 
 # ── LogDataset ────────────────────────────────────────────────────────────────
@@ -145,26 +139,23 @@ class TestLogPath:
 
 class TestLogDataset:
     def _make_dataset_result(self, path, scores):
-        from ursa.basic.building_block import BuildingBlock
-        from ursa.basic.result import DatasetMetrics, DatasetResult, PathResult
+        from tests.conftest import make_path_result
+        from ursa.basic.result import DatasetMetrics, DatasetResult
 
-        vr = make_variant(path, scores)
-        pr = PathResult(
-            original_path=path,
-            is_consistent=True,
-            starting_materials=(BuildingBlock(smiles="CC", found_in_catalog=True),),
-            all_bb_found=True,
-            best_variant=vr,
-            is_route_solved=True,
-        )
+        pr = make_path_result(path, scores)
+        mean = sum(scores) / len(scores)
         metrics = DatasetMetrics(
             total_molecules=1,
             molecules_with_route=1,
-            solved_routes=1,
-            passed_steps=len(scores),
-            total_steps=len(scores),
+            routes_no_synthesis=0,
+            routes_solv_0=1,
+            routes_solv_1=1,
+            routes_solv_2=1,
+            solv_0=1.0,
+            solv_1=1.0,
             solv_2=1.0,
-            mean_chemcensor_score=sum(scores) / len(scores),
+            mean_score_without_fg=mean,
+            mean_score_with_fg=mean,
         )
         return DatasetResult(path_results=(pr,), metrics=metrics)
 
@@ -177,11 +168,15 @@ class TestLogDataset:
         expected_keys = {
             "total_molecules",
             "molecules_with_route",
-            "solved_routes",
-            "passed_steps",
-            "total_steps",
+            "routes_no_synthesis",
+            "routes_solv_0",
+            "routes_solv_1",
+            "routes_solv_2",
+            "solv_0",
+            "solv_1",
             "solv_2",
-            "mean_chemcensor_score",
+            "mean_score_without_fg",
+            "mean_score_with_fg",
         }
         assert expected_keys <= p.keys()
 
@@ -191,7 +186,7 @@ class TestLogDataset:
         p = _payload(mock_std_logger)
         m = dr.metrics
         assert p["total_molecules"] == m.total_molecules
-        assert p["solved_routes"] == m.solved_routes
+        assert p["routes_solv_2"] == m.routes_solv_2
         assert p["solv_2"] == pytest.approx(m.solv_2)
 
 

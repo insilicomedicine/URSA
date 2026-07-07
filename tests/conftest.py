@@ -3,8 +3,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from ursa.basic.building_block import BuildingBlock
 from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
+from ursa.basic.result import PathResult
 from ursa.basic.result import StepResult
 from ursa.basic.result import VariantResult
 
@@ -89,17 +91,37 @@ def empty_catalog_file(tmp_path: Path) -> Path:
 # ── mock scorer ───────────────────────────────────────────────────────────────
 
 
-def make_scorer(*scores: float):
-    """Return a mock ReactionScorer that yields ``scores`` in order."""
+class _Score:
+    """Minimal stand-in for ``chemcensor.ScoreResult`` used in tests."""
+
+    def __init__(self, without_functional_groups: float, with_functional_groups: float):
+        self.without_functional_groups = without_functional_groups
+        self.with_functional_groups = with_functional_groups
+
+
+def _to_score(value: float | tuple[float, float]) -> _Score:
+    """Coerce a float (uniform) or ``(without_fg, with_fg)`` tuple to ``_Score``."""
+    if isinstance(value, tuple):
+        without_fg, with_fg = value
+        return _Score(without_fg, with_fg)
+    return _Score(value, value)
+
+
+def make_scorer(*scores: float | tuple[float, float]):
+    """Return a mock ReactionScorer whose ``evaluate`` yields ``scores`` in order.
+
+    Each score is either a float (same with/without FG) or a
+    ``(without_fg, with_fg)`` tuple to exercise the Solv-1/Solv-2 split.
+    """
     mock = MagicMock()
-    mock.score.side_effect = list(scores)
+    mock.evaluate.side_effect = [_to_score(s) for s in scores]
     return mock
 
 
-def make_const_scorer(value: float):
-    """Return a mock ReactionScorer that always returns ``value``."""
+def make_const_scorer(value: float | tuple[float, float]):
+    """Return a mock ReactionScorer whose ``evaluate`` always returns ``value``."""
     mock = MagicMock()
-    mock.score.return_value = value
+    mock.evaluate.return_value = _to_score(value)
     return mock
 
 
@@ -109,21 +131,68 @@ def make_const_scorer(value: float):
 def make_variant(
     path: RetrosyntheticPath,
     scores: tuple[float, ...],
-    pass_threshold: float = 1.0,
+    scores_with_fg: tuple[float, ...] | None = None,
 ) -> VariantResult:
+    """Build a VariantResult; ``scores`` is the without-FG dimension.
+
+    When ``scores_with_fg`` is omitted the with-FG scores mirror ``scores``.
+    """
     nodes = path.get_all_steps()
+    with_fg = scores_with_fg if scores_with_fg is not None else scores
     step_results = tuple(
-        StepResult(node=n, score=s, passed=s >= pass_threshold)
-        for n, s in zip(nodes, scores)
+        StepResult(node=n, score_without_fg=wo, score_with_fg=w)
+        for n, wo, w in zip(nodes, scores, with_fg)
     )
     total = len(step_results)
-    passed = sum(1 for sr in step_results if sr.passed)
-    pf = passed / total if total else 0.0
-    avg = sum(sr.score for sr in step_results) / total if total else 0.0
+    has_steps = total > 0
+    pass_1 = has_steps and all(sr.passes_solv_1 for sr in step_results)
+    pass_2 = has_steps and all(sr.passes_solv_2 for sr in step_results)
+    mean_wo = (
+        sum(sr.score_without_fg for sr in step_results) / total if has_steps else 0.0
+    )
+    mean_w = sum(sr.score_with_fg for sr in step_results) / total if has_steps else 0.0
     return VariantResult(
         path=path,
         step_results=step_results,
-        percent_found=pf,
-        chemcensor_per_route=avg,
-        all_steps_passed=all(sr.passed for sr in step_results),
+        all_steps_pass_solv_1=pass_1,
+        all_steps_pass_solv_2=pass_2,
+        mean_score_without_fg=mean_wo,
+        mean_score_with_fg=mean_w,
+    )
+
+
+# ── PathResult builder ────────────────────────────────────────────────────────
+
+
+def make_path_result(
+    path: RetrosyntheticPath,
+    scores: tuple[float, ...],
+    *,
+    scores_with_fg: tuple[float, ...] | None = None,
+    bb_found: bool = True,
+    is_consistent: bool = True,
+    is_no_synthesis: bool | None = None,
+) -> PathResult:
+    """Build a PathResult using a single variant for both Solv levels.
+
+    ``scores`` is the without-FG dimension; ``scores_with_fg`` defaults to
+    mirror it. Pass flags are derived exactly as :meth:`Ursa.score` does.
+    """
+    variant = make_variant(path, scores, scores_with_fg)
+    if is_no_synthesis is None:
+        is_no_synthesis = path.num_steps == 0
+    passes_solv_0 = not is_no_synthesis and is_consistent and bb_found
+    passes_solv_1 = passes_solv_0 and variant.all_steps_pass_solv_1
+    passes_solv_2 = passes_solv_0 and variant.all_steps_pass_solv_2
+    return PathResult(
+        original_path=path,
+        is_consistent=is_consistent,
+        starting_materials=(BuildingBlock(smiles="CC", found_in_catalog=bb_found),),
+        all_bb_found=bb_found,
+        is_no_synthesis=is_no_synthesis,
+        passes_solv_0=passes_solv_0,
+        passes_solv_1=passes_solv_1,
+        passes_solv_2=passes_solv_2,
+        best_variant_solv_1=variant,
+        best_variant_solv_2=variant,
     )

@@ -4,14 +4,16 @@ from enum import Enum
 class PathScoringConfig(Enum):
     """Configuration for scoring retrosynthetic paths.
 
-    ``pass_threshold`` defines the minimum reaction-scorer value for a
-    step to be considered as passed. Steps with a score strictly below
-    this value are counted as failed when selecting the best collapsed
-    variant and when computing ``is_route_solved``.
+    ``failed_step_score`` is the normalised floor for a reaction score:
+    negative scorer values (processing failures) are clamped to it.
 
-    ``failed_step_score`` is the sentinel value returned by the scorer
-    for reactions that could not be processed (e.g. mapping failures).
+    ``pass_threshold`` is the minimum (normalised) reaction score a step
+    must **strictly exceed** to pass a Solv level. Steps scoring at or
+    below it are counted as failed both when deciding ``passes_solv_1/2``
+    and when the best-variant selector ranks variants. The default
+    (``0.0``) matches the Solv-N definition "every step scores > 0"; raise
+    it to demand a higher per-step confidence.
     """
 
-    pass_threshold = 1.0
     failed_step_score = 0.0
+    pass_threshold = 0.0

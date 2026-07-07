@@ -3,8 +3,30 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from functools import cached_property
+from functools import lru_cache
 
 from rdkit import Chem
+
+
+@lru_cache(maxsize=None)
+def _canonicalize(smiles: str) -> tuple[str, bool]:
+    """Return ``(canonical_smiles, is_valid)`` for ``smiles``, memoised.
+
+    Canonicalisation is a pure function of the input string, so results
+    are cached: :class:`~ursa.PathCollapser` rebuilds the same molecules
+    many times across collapsed variants, and re-parsing each one with
+    RDKit dominates the prepare phase otherwise.
+
+    :param smiles: Input SMILES string.
+    :type smiles: str
+    :return: RDKit-canonical SMILES (``""`` if unparsable) and a validity
+        flag.
+    :rtype: tuple[str, bool]
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return "", False
+    return Chem.MolToSmiles(mol), True
 
 
 @dataclass(frozen=True)
@@ -32,11 +54,9 @@ class RetrosyntheticNode:
     is_valid: bool = field(init=False)
 
     def __post_init__(self) -> None:
-        mol = Chem.MolFromSmiles(self.smiles)
-        object.__setattr__(
-            self, "canonical_smiles", Chem.MolToSmiles(mol) if mol is not None else ""
-        )
-        object.__setattr__(self, "is_valid", mol is not None)
+        canonical_smiles, is_valid = _canonicalize(self.smiles)
+        object.__setattr__(self, "canonical_smiles", canonical_smiles)
+        object.__setattr__(self, "is_valid", is_valid)
 
     @classmethod
     def _from_mol_dict(cls, mol_node: dict) -> RetrosyntheticNode:
@@ -106,7 +126,12 @@ class RetrosyntheticNode:
         return len(self.children) == 0
 
     def __hash__(self) -> int:
-        return hash((self.canonical_smiles, self.children))
+        cached = self.__dict__.get("_hash")
+        if cached is not None:
+            return cached
+        value = hash((self.canonical_smiles, self.children))
+        object.__setattr__(self, "_hash", value)
+        return value
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, RetrosyntheticNode):

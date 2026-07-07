@@ -1,32 +1,54 @@
+from typing import Callable
+
+from ..basic import StepResult
 from ..basic import VariantResult
 from ..configs import PathScoringConfig
 from .errors import EmptyVariantsError
 
+ScoreGetter = Callable[[StepResult], float]
+
+
+def _score_without_fg(step: StepResult) -> float:
+    """Solv-1 dimension: functional-group-agnostic step score."""
+    return step.score_without_fg
+
+
+def _score_with_fg(step: StepResult) -> float:
+    """Solv-2 dimension: functional-group-aware step score."""
+    return step.score_with_fg
+
 
 class BestPathSelector:
-    """Selects the best-scoring variant from a set of collapsed variants.
+    """Selects the best collapsed variant for a given Solv dimension.
 
-    The selection follows a three-level priority:
+    Selection is parametrised by a ``score_getter`` that extracts the
+    relevant per-step score (functional-group-agnostic for Solv-1,
+    functional-group-aware for Solv-2). The three-level priority is:
 
-    1. **Minimum failed steps** — variants with the fewest steps where
-       ``score == 0`` (not found in the database) are preferred.
-    2. **Maximum average score** — among equally failing variants, the
-       one with the highest ``chemcensor_per_route`` is preferred.
-    3. **Shortest path** — among variants still tied, the shortest
-       (fewest steps) is preferred, as it represents the most compressed
-       description of the synthesis.
+    1. **Minimum failed steps** — fewest steps scoring at or below
+       :attr:`PathScoringConfig.pass_threshold` in the chosen dimension.
+    2. **Maximum average score** — highest mean score in that dimension.
+    3. **Shortest path** — fewest steps, as the most compressed synthesis.
+
+    Because selection minimises failed steps first, a route satisfies the
+    corresponding Solv level *iff* the selected variant has zero failed
+    steps — i.e. selection doubles as the existence check over variants.
     """
 
-    def select(self, variants: tuple[VariantResult, ...]) -> VariantResult:
-        """Return the best variant from ``variants``.
+    def select(
+        self,
+        variants: tuple[VariantResult, ...],
+        score_getter: ScoreGetter,
+    ) -> VariantResult:
+        """Return the best variant under ``score_getter``.
 
-        :param variants: All scored variants of a retrosynthetic path,
-            including the original and all collapsed forms. Must not be
-            empty.
+        :param variants: All scored variants of a retrosynthetic path
+            (original and collapsed forms). Must not be empty.
         :type variants: tuple[VariantResult, ...]
+        :param score_getter: Extracts the per-step score to rank by.
+        :type score_getter: ScoreGetter
 
-        :return: The variant with the best score according to the
-            three-level priority rule.
+        :return: The best variant for the chosen dimension.
         :rtype: VariantResult
         """
         if not variants:
@@ -34,41 +56,58 @@ class BestPathSelector:
         return min(
             variants,
             key=lambda v: (
-                self._count_failed_steps(v),
-                -self._average_score(v),
+                self._count_failed_steps(v, score_getter),
+                -self._average_score(v, score_getter),
                 v.path.num_steps,
             ),
         )
 
-    def _count_failed_steps(self, variant: VariantResult) -> int:
-        """Return the number of steps in ``variant`` with ``score == 0``.
+    def select_for_solv_1(self, variants: tuple[VariantResult, ...]) -> VariantResult:
+        """Select the best variant for Solv-1 (functional-group-agnostic)."""
+        return self.select(variants, _score_without_fg)
 
-        Steps scored as SIS or tautomerization are excluded (they are
-        treated as automatically passing with score 1.0).
+    def select_for_solv_2(self, variants: tuple[VariantResult, ...]) -> VariantResult:
+        """Select the best variant for Solv-2 (functional-group-aware)."""
+        return self.select(variants, _score_with_fg)
+
+    def _count_failed_steps(
+        self, variant: VariantResult, score_getter: ScoreGetter
+    ) -> int:
+        """Return the number of failed steps in ``variant``.
+
+        A step fails when its score does not strictly exceed
+        :attr:`PathScoringConfig.pass_threshold`.
 
         :param variant: The variant to evaluate.
         :type variant: VariantResult
+        :param score_getter: Extracts the per-step score to test.
+        :type score_getter: ScoreGetter
 
-        :return: Count of failed (score == 0) steps.
+        :return: Count of failed steps (score at or below ``pass_threshold``)
+            in the chosen dimension.
         :rtype: int
         """
         return sum(
             1
             for sr in variant.step_results
-            if sr.score == PathScoringConfig.failed_step_score.value
+            if score_getter(sr) <= PathScoringConfig.pass_threshold.value
         )
 
-    def _average_score(self, variant: VariantResult) -> float:
-        """Return the mean reaction score across all steps of ``variant``.
-
-        Empty variants (no steps) return 0.0.
+    def _average_score(
+        self, variant: VariantResult, score_getter: ScoreGetter
+    ) -> float:
+        """Return the mean step score of ``variant`` in the chosen dimension.
 
         :param variant: The variant to evaluate.
         :type variant: VariantResult
+        :param score_getter: Extracts the per-step score to average.
+        :type score_getter: ScoreGetter
 
-        :return: Mean score in ``[0.0, max_scorer_value]``.
+        :return: Mean score; ``0.0`` for an empty variant.
         :rtype: float
         """
         if not variant.step_results:
             return 0.0
-        return sum(sr.score for sr in variant.step_results) / len(variant.step_results)
+        return sum(score_getter(sr) for sr in variant.step_results) / len(
+            variant.step_results
+        )

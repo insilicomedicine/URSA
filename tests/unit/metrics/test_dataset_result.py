@@ -2,31 +2,26 @@ import json
 
 import pytest
 
-from tests.conftest import make_variant
-from ursa.basic.building_block import BuildingBlock
+from tests.conftest import make_path_result
 from ursa.basic.result import DatasetMetrics
 from ursa.basic.result import DatasetResult
-from ursa.basic.result import PathResult
 
 
 def _make_dataset_result(path, scores):
-    vr = make_variant(path, scores)
-    pr = PathResult(
-        original_path=path,
-        is_consistent=True,
-        starting_materials=(BuildingBlock(smiles="CC", found_in_catalog=True),),
-        all_bb_found=True,
-        best_variant=vr,
-        is_route_solved=True,
-    )
+    pr = make_path_result(path, scores)
+    mean = sum(scores) / len(scores)
     metrics = DatasetMetrics(
         total_molecules=1,
         molecules_with_route=1,
-        solved_routes=1,
-        passed_steps=len(scores),
-        total_steps=len(scores),
+        routes_no_synthesis=0,
+        routes_solv_0=1,
+        routes_solv_1=1,
+        routes_solv_2=1,
+        solv_0=1.0,
+        solv_1=1.0,
         solv_2=1.0,
-        mean_chemcensor_score=sum(scores) / len(scores),
+        mean_score_without_fg=mean,
+        mean_score_with_fg=mean,
     )
     return DatasetResult(path_results=(pr,), metrics=metrics)
 
@@ -54,8 +49,10 @@ class TestSave:
         dr = _make_dataset_result(path_1step, (3.0,))
         metrics_path, _ = dr.save(tmp_path)
         data = json.loads(metrics_path.read_text())
+        assert "solv_0" in data
+        assert "solv_1" in data
         assert "solv_2" in data
-        assert "solved_routes" in data
+        assert "routes_solv_2" in data
 
     def test_paths_file_is_list(self, tmp_path, path_1step):
         dr = _make_dataset_result(path_1step, (3.0,))
@@ -68,9 +65,10 @@ class TestSave:
         dr = _make_dataset_result(path_1step, (3.0,))
         _, paths_path = dr.save(tmp_path)
         data = json.loads(paths_path.read_text())
-        steps = data[0]["best_variant"]["steps"]
+        steps = data[0]["best_variant_solv_2"]["steps"]
         assert len(steps) == 1
-        assert steps[0]["score"] == pytest.approx(3.0)
+        assert steps[0]["score_with_fg"] == pytest.approx(3.0)
+        assert steps[0]["score_without_fg"] == pytest.approx(3.0)
 
     def test_creates_output_dir_if_missing(self, tmp_path, path_1step):
         dr = _make_dataset_result(path_1step, (3.0,))

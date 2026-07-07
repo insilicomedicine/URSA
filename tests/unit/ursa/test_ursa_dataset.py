@@ -4,12 +4,10 @@ import pytest
 from rdkit import Chem
 
 from tests.conftest import make_const_scorer
-from tests.conftest import make_variant
-from ursa.basic.building_block import BuildingBlock
+from tests.conftest import make_path_result
 from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
 from ursa.basic.result import DatasetResult
-from ursa.basic.result import PathResult
 from ursa.ursa import Ursa
 
 
@@ -39,22 +37,6 @@ def _make_path(
         children=(RetrosyntheticNode(smiles=leaf_smiles),),
     )
     return RetrosyntheticPath(path_id=path_id, root=root)
-
-
-def _make_path_result(
-    path: RetrosyntheticPath,
-    scores: tuple[float, ...],
-    is_route_solved: bool = True,
-) -> PathResult:
-    vr = make_variant(path, scores)
-    return PathResult(
-        original_path=path,
-        is_consistent=True,
-        starting_materials=(BuildingBlock(smiles="CC", found_in_catalog=True),),
-        all_bb_found=True,
-        best_variant=vr,
-        is_route_solved=is_route_solved,
-    )
 
 
 def _canonical(smiles: str) -> str:
@@ -125,31 +107,31 @@ class TestGroupPathsByTarget:
 class TestSelectBestPathResult:
     def test_single_result_returned(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path)
-        pr = _make_path_result(path_1step, (3.0,))
+        pr = make_path_result(path_1step, (3.0,))
         assert ursa._select_best_path_result([pr]) is pr
 
-    def test_solved_preferred_over_unsolved(self, tmp_path, path_1step):
+    def test_solv_2_preferred_over_lower_levels(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path)
-        unsolved = _make_path_result(path_1step, (0.0,), is_route_solved=False)
-        solved = _make_path_result(path_1step, (1.0,), is_route_solved=True)
-        assert ursa._select_best_path_result([unsolved, solved]) is solved
+        solv_0_only = make_path_result(path_1step, (0.0,))
+        solv_2 = make_path_result(path_1step, (1.0,))
+        assert ursa._select_best_path_result([solv_0_only, solv_2]) is solv_2
 
     def test_among_solved_higher_score_wins(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path)
-        low = _make_path_result(path_1step, (1.0,), is_route_solved=True)
-        high = _make_path_result(path_1step, (4.0,), is_route_solved=True)
+        low = make_path_result(path_1step, (1.0,))
+        high = make_path_result(path_1step, (4.0,))
         assert ursa._select_best_path_result([low, high]) is high
 
-    def test_among_unsolved_better_variant_wins(self, tmp_path, path_1step):
+    def test_among_failing_better_variant_wins(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path)
-        worse = _make_path_result(path_1step, (0.0,), is_route_solved=False)
-        better = _make_path_result(path_1step, (2.0,), is_route_solved=False)
+        worse = make_path_result(path_1step, (0.0,), bb_found=False)
+        better = make_path_result(path_1step, (2.0,), bb_found=False)
         assert ursa._select_best_path_result([worse, better]) is better
 
-    def test_all_unsolved_still_returns_a_result(self, tmp_path, path_1step):
+    def test_all_failing_still_returns_a_result(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path)
-        pr1 = _make_path_result(path_1step, (0.0,), is_route_solved=False)
-        pr2 = _make_path_result(path_1step, (0.5,), is_route_solved=False)
+        pr1 = make_path_result(path_1step, (0.0,), bb_found=False)
+        pr2 = make_path_result(path_1step, (0.5,), bb_found=False)
         result = ursa._select_best_path_result([pr1, pr2])
         assert result in (pr1, pr2)
 
@@ -184,7 +166,7 @@ class TestScoreDatasetWithTargets:
     def test_solv_2_denominator_is_target_count(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path, catalog_lines=["CC", "O"])
         result = ursa.score_dataset([path_1step], target_smiles=["CCO", "CCCO"])
-        assert result.metrics.solv_2 == pytest.approx(result.metrics.solved_routes / 2)
+        assert result.metrics.solv_2 == pytest.approx(result.metrics.routes_solv_2 / 2)
 
     def test_both_args_raises(self, tmp_path, path_1step):
         ursa = _make_ursa(tmp_path, catalog_lines=["CC", "O"])
@@ -220,6 +202,73 @@ class TestScoreDatasetWithTargets:
         result = ursa.score_dataset([path_1step], target_smiles=[])
         assert len(result.path_results) == 0
         assert result.metrics.total_molecules == 0
+
+
+# ── ScoreDataset parallel mode ────────────────────────────────────────────────
+
+
+class TestScoreDatasetParallel:
+    def test_parallel_matches_sequential(self, tmp_path, monkeypatch, path_1step):
+        import chemcensor.parallel as cp
+
+        from tests.conftest import _Score
+
+        def fake_score_batch(smiles, *, db_path, config=None, return_dict=False):
+            # Aligned with input order, like the real score_batch default.
+            return [_Score(3.0, 3.0) for _ in smiles]
+
+        monkeypatch.setattr(cp, "score_batch", fake_score_batch)
+
+        cat = tmp_path / "catalog.smi"
+        cat.write_text("CC\nO\n")
+        sequential = Ursa(scorer=make_const_scorer(3.0), bb_catalog_path=str(cat))
+        parallel = Ursa(
+            scorer=make_const_scorer(3.0),
+            bb_catalog_path=str(cat),
+            parallel=True,
+            n_workers=2,
+            chemcensor_db_path="dummy.db",
+        )
+
+        seq = sequential.score_dataset([path_1step], target_smiles=["CCO"])
+        par = parallel.score_dataset([path_1step], target_smiles=["CCO"])
+
+        assert par.metrics.routes_solv_2 == seq.metrics.routes_solv_2
+        assert par.metrics.solv_2 == pytest.approx(seq.metrics.solv_2)
+        assert par.metrics.mean_score_with_fg == pytest.approx(
+            seq.metrics.mean_score_with_fg
+        )
+
+    def test_parallel_scores_each_reaction_once(self, tmp_path, monkeypatch):
+        import chemcensor.parallel as cp
+
+        from tests.conftest import _Score
+
+        seen_batches = []
+
+        def fake_score_batch(smiles, *, db_path, config=None, return_dict=False):
+            smiles = list(smiles)
+            seen_batches.append(smiles)
+            return [_Score(3.0, 3.0) for _ in smiles]
+
+        monkeypatch.setattr(cp, "score_batch", fake_score_batch)
+
+        cat = tmp_path / "catalog.smi"
+        cat.write_text("CC\nO\n")
+        ursa = Ursa(
+            scorer=make_const_scorer(3.0),
+            bb_catalog_path=str(cat),
+            parallel=True,
+            chemcensor_db_path="dummy.db",
+        )
+
+        p1 = _make_path("CCO", path_id="p1")
+        p2 = _make_path("CCO", path_id="p2")
+        ursa.score_dataset([p1, p2], target_smiles=["CCO"])
+
+        # Exactly one bulk call, and reactions are deduplicated.
+        assert len(seen_batches) == 1
+        assert len(seen_batches[0]) == len(set(seen_batches[0]))
 
 
 # ── ScoreDataset backward compatibility ──────────────────────────────────────
