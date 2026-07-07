@@ -1,5 +1,11 @@
 # URSA
 
+[![URSA Paper](https://img.shields.io/badge/URSA%20Paper-arXiv%3A2607.04688-B31B1B?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2607.04688)
+[![ChemCensor Paper](https://img.shields.io/badge/ChemCensor%20Paper-arXiv%3A2602.03554-B31B1B?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2602.03554)
+[![ChemCensor on GitHub](https://img.shields.io/badge/ChemCensor-GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/insilicomedicine/ChemCensor)
+[![RetroCast on GitHub](https://img.shields.io/badge/RetroCast-GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/ischemist/project-procrustes)
+
+
 URSA is a framework for evaluating retrosynthetic routes: it checks the structural consistency of the tree, verifies that starting materials are present in the building-block catalog, generates collapsed variants, scores every step with `ChemCensor`, and aggregates dataset-level metrics under the **Solv-N** hierarchy.
 
 ## Solv-N metrics
@@ -208,18 +214,30 @@ URSA is released under a license for **independent benchmarking and evaluation p
 
 ## Citation
 
-If you use URSA in your work, please cite:
+If you use URSA in your work, please cite the URSA paper:
+
+```bibtex
+@misc{zagribelnyy2026ursachemistryawarebenchmarkutilitarian,
+      title={URSA: Chemistry-Aware Benchmark for Utilitarian Retrosynthesis Assessment},
+      author={Bogdan Zagribelnyy and Ivan Ilin and Nikita Bondarev and Anton Morgunov and Arkadii Lin and Maksim Kuznetsov and Rim Shayakhmetov and Vladimir Aladinskiy and Alex Aliper and Alex Zhavoronkov},
+      year={2026},
+      eprint={2607.04688},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2607.04688},
+}
+```
+
+and the ChemCensor paper:
 
 ```bibtex
 @misc{zagribelnyy2026singleanswerenoughrethinking,
       title={When Single Answer Is Not Enough: Rethinking Single-Step Retrosynthesis Benchmarks for LLMs},
-      author={Bogdan Zagribelnyy and Ivan Ilin and Maksim Kuznetsov and Nikita Bondarev and Roman Schutski
-                and Thomas MacDougall and Rim Shayakhmetov and Zulfat Miftakhutdinov
-                and Mikolaj Mizera and Vladimir Aladinskiy and Alex Aliper and Alex Zhavoronkov},
+      author={Bogdan Zagribelnyy and Ivan Ilin and Maksim Kuznetsov and Nikita Bondarev and Mathieu Reymond and Roman Schutski and Thomas MacDougall and Rim Shayakhmetov and Zulfat Miftakhutdinov and Mikolaj Mizera and Vladimir Aladinskiy and Alex Aliper and Alex Zhavoronkov},
       year={2026},
       eprint={2602.03554},
       archivePrefix={arXiv},
       primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2602.03554}
+      url={https://arxiv.org/abs/2602.03554},
 }
 ```
