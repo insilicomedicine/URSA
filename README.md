@@ -204,6 +204,50 @@ dataset = BenchmarkDataset.from_csv(
 result = ursa.score_dataset(paths, target_smiles=dataset.target_smiles)
 ```
 
+## Benchmarking an LLM
+
+The script in `scripts/llm_benchmark/` runs the complete best-of-N protocol:
+canonicalize targets, build randomized prompts, sample a model through
+[LiteLLM](https://docs.litellm.ai/), adapt the XML-like answers with RetroCast,
+and calculate Solv-N metrics. Usage documentation and an interactive notebook
+are available in [`doc/llm_benchmark/`](doc/llm_benchmark/).
+
+Install the optional inference dependencies:
+
+```bash
+uv sync --extra llm-benchmark
+cp .env.example .env
+```
+
+Put API credentials in `.env`; select the model for each run with `--model`.
+LiteLLM model identifiers support OpenAI, Gemini, Anthropic, xAI, Azure OpenAI,
+and other providers:
+
+```bash
+uv run python scripts/benchmark_llm.py \
+    --model anthropic/claude-sonnet-4-5 \
+    --benchmark EXPERT_2026 \
+    --samples 10 \
+    --request-workers 8 \
+    --score-workers 0 \
+    --output data/results/claude
+```
+
+For Azure OpenAI, set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, and
+`AZURE_OPENAI_API_VERSION` in `.env`, then pass the deployment name:
+
+```bash
+uv run python scripts/benchmark_llm.py \
+    --model azure/my-deployment \
+    --benchmark EXPERT_2026 \
+    --output data/results/azure
+```
+
+Completions are appended to `OUTPUT/completions.jsonl` as they arrive. Repeating
+the command resumes missing samples; `--fresh` starts over. `--sample-only` and
+`--score-only` run one phase, `--limit N` selects the first N targets for a smoke
+test, and `--dry-run` prints one prompt without calling the model.
+
 ---
 
 ## License
