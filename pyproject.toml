@@ -9,13 +9,17 @@ dependencies = [
     "huggingface-hub>=0.26.0",
     "numpy==1.26.4",
     "rdkit>=2025.3.5",
-    "retrocast>=0.7.0",
+    "retrocast>=0.7.0,<0.8",
 ]
 
 [project.scripts]
 ursa-bench = "ursa.cli:main"
 
 [project.optional-dependencies]
+llm-benchmark = [
+    "litellm>=1.0,<2.0",
+    "python-dotenv>=1.0,<2.0",
+]
 dev = [
     "flake8==7.0.0",
     "pre-commit==4.2.0",
