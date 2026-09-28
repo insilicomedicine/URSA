@@ -13,8 +13,9 @@ class BuildingBlock:
 
     :param smiles: SMILES of the starting-material molecule.
     :type smiles: str
-    :param found_in_catalog: ``True`` if ``smiles`` was found in the
-        building-block catalog, ``False`` otherwise.
+    :param found_in_catalog: ``True`` if this molecule was found in the
+        building-block catalog under the active
+        :class:`~ursa.BuildingBlockMatchPolicy`, ``False`` otherwise.
     :type found_in_catalog: bool
     """
 

@@ -54,3 +54,23 @@ class EmptyVariantsError(ScoringError):
 
     def __repr__(self) -> str:
         return f"EmptyVariantsError(path_id={self.path_id!r})"
+
+
+class UnsupportedBestPathPolicyError(ScoringError):
+    """Raised when :class:`~ursa.BestPathSelector` gets an unknown policy.
+
+    :param policy: The unsupported policy value.
+    :type policy: object
+    """
+
+    def __init__(self, policy: object) -> None:
+        """Initialize UnsupportedBestPathPolicyError.
+
+        :param policy: The unsupported policy value.
+        :type policy: object
+        """
+        self.policy = policy
+        super().__init__(f"unsupported best-path policy: {policy!r}")
+
+    def __repr__(self) -> str:
+        return f"UnsupportedBestPathPolicyError(policy={self.policy!r})"

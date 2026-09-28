@@ -13,6 +13,8 @@ from .basic import PathResult
 from .basic import RetrosyntheticPath
 from .basic import VariantResult
 from .collapsing import PathCollapser
+from .configs import BestPathSelectionPolicy
+from .configs import BuildingBlockMatchPolicy
 from .configs import DataConfig
 from .logging import get_logger
 from .logging import Logger
@@ -85,6 +87,14 @@ class Ursa:
         (plain-text SMILES or CSV with a ``smiles`` column). Defaults to
         :attr:`~ursa.DataConfig.bb_catalog_path`.
     :type bb_catalog_path: str | PathLike | None
+    :param best_path_policy: How to break ties when selecting the best
+        collapsed variant for each Solv level. Defaults to
+        :attr:`~ursa.BestPathSelectionPolicy.MEAN_SCORE`.
+    :type best_path_policy: BestPathSelectionPolicy | str
+    :param bb_match_policy: How to key the building-block catalog for
+        Solv-0. Defaults to
+        :attr:`~ursa.BuildingBlockMatchPolicy.SMILES`.
+    :type bb_match_policy: BuildingBlockMatchPolicy | str
     """
 
     def __init__(
@@ -95,6 +105,12 @@ class Ursa:
         parallel: bool = False,
         n_workers: int | None = None,
         chemcensor_db_path: str | PathLike | None = None,
+        best_path_policy: (
+            BestPathSelectionPolicy | str
+        ) = BestPathSelectionPolicy.MEAN_SCORE,
+        bb_match_policy: (
+            BuildingBlockMatchPolicy | str
+        ) = BuildingBlockMatchPolicy.SMILES,
     ) -> None:
         """Initialize Ursa.
 
@@ -121,10 +137,18 @@ class Ursa:
         :param chemcensor_db_path: Explicit path to a ChemCensor
             ``.sqlite`` database. Used by both the default sequential
             scorer and parallel mode. When ``None``, the default database
-            is downloaded on first use from Hugging Face (see
+            ``ChemCensor-DB-U3.sqlite`` is downloaded on first use from
+            Hugging Face (see
             :func:`~ursa.data.chemcensor_db.ensure_chemcensor_db`) to
             :attr:`~ursa.DataConfig.chemcensor_db_path`.
         :type chemcensor_db_path: str | PathLike | None
+        :param best_path_policy: Tie-break policy for best-variant
+            selection after minimising failed steps. See
+            :class:`~ursa.BestPathSelectionPolicy`.
+        :type best_path_policy: BestPathSelectionPolicy | str
+        :param bb_match_policy: Building-block identity for Solv-0 catalog
+            lookup. See :class:`~ursa.BuildingBlockMatchPolicy`.
+        :type bb_match_policy: BuildingBlockMatchPolicy | str
         """
         if chemcensor_db_path is None and (scorer is None or parallel):
             from .data.chemcensor_db import ensure_chemcensor_db
@@ -140,10 +164,12 @@ class Ursa:
 
             bb_catalog_path = ensure_bb_catalog(DataConfig.bb_catalog_path)
         self._consistency_checker = PathConsistencyChecker()
-        self._bb_checker = BuildingBlockChecker.from_file(bb_catalog_path)
+        self._bb_checker = BuildingBlockChecker.from_file(
+            bb_catalog_path, match_policy=bb_match_policy
+        )
         self._collapser = PathCollapser()
         self._path_scorer = PathScorer(scorer)
-        self._selector = BestPathSelector()
+        self._selector = BestPathSelector(policy=best_path_policy)
         self._metrics_calculator = DatasetMetricsCalculator()
         self._logger: Logger = get_logger(__name__)
         self._parallel = parallel

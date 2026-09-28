@@ -29,6 +29,38 @@ def _canonicalize(smiles: str) -> tuple[str, bool]:
     return Chem.MolToSmiles(mol), True
 
 
+def compute_inchi_key(smiles: str) -> str:
+    """Return the standard InChIKey for ``smiles``, or ``""`` if unavailable.
+
+    Uncached — use for one-shot conversions such as indexing a large
+    building-block catalog. For repeated leaf lookups prefer
+    :func:`smiles_to_inchi_key`.
+
+    :param smiles: Input SMILES string.
+    :type smiles: str
+    :return: InChIKey, or ``""`` when the molecule cannot be parsed or
+        InChI generation fails.
+    :rtype: str
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return ""
+    key = Chem.MolToInchiKey(mol)
+    return key or ""
+
+
+@lru_cache(maxsize=None)
+def smiles_to_inchi_key(smiles: str) -> str:
+    """Memoised :func:`compute_inchi_key` for repeated leaf lookups.
+
+    :param smiles: Input SMILES string.
+    :type smiles: str
+    :return: InChIKey, or ``""`` when unavailable.
+    :rtype: str
+    """
+    return compute_inchi_key(smiles)
+
+
 @dataclass(frozen=True)
 class RetrosyntheticNode:
     """A node in a retrosynthetic tree.
@@ -57,6 +89,18 @@ class RetrosyntheticNode:
         canonical_smiles, is_valid = _canonicalize(self.smiles)
         object.__setattr__(self, "canonical_smiles", canonical_smiles)
         object.__setattr__(self, "is_valid", is_valid)
+
+    @cached_property
+    def inchi_key(self) -> str:
+        """Standard InChIKey of this molecule, or ``""`` if unavailable.
+
+        Used by :class:`~ursa.BuildingBlockChecker` so tautomer SMILES of
+        the same building block match the catalog.
+
+        :return: InChIKey string, or ``""`` on parse / InChI failure.
+        :rtype: str
+        """
+        return smiles_to_inchi_key(self.smiles)
 
     @classmethod
     def _from_mol_dict(cls, mol_node: dict) -> RetrosyntheticNode:

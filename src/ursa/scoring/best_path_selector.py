@@ -2,8 +2,10 @@ from typing import Callable
 
 from ..basic import StepResult
 from ..basic import VariantResult
+from ..configs import BestPathSelectionPolicy
 from ..configs import PathScoringConfig
 from .errors import EmptyVariantsError
+from .errors import UnsupportedBestPathPolicyError
 
 ScoreGetter = Callable[[StepResult], float]
 
@@ -23,17 +25,37 @@ class BestPathSelector:
 
     Selection is parametrised by a ``score_getter`` that extracts the
     relevant per-step score (functional-group-agnostic for Solv-1,
-    functional-group-aware for Solv-2). The three-level priority is:
+    functional-group-aware for Solv-2). The primary key is always:
 
     1. **Minimum failed steps** — fewest steps scoring at or below
        :attr:`PathScoringConfig.pass_threshold` in the chosen dimension.
-    2. **Maximum average score** — highest mean score in that dimension.
-    3. **Shortest path** — fewest steps, as the most compressed synthesis.
+
+    Remaining tie-breakers follow
+    :class:`~ursa.BestPathSelectionPolicy`:
+
+    * ``MEAN_SCORE`` (default) — maximum average score, then shortest path.
+    * ``PATH_LENGTH`` — shortest path, then maximum average score.
 
     Because selection minimises failed steps first, a route satisfies the
     corresponding Solv level *iff* the selected variant has zero failed
     steps — i.e. selection doubles as the existence check over variants.
     """
+
+    def __init__(
+        self,
+        policy: BestPathSelectionPolicy | str = BestPathSelectionPolicy.MEAN_SCORE,
+    ) -> None:
+        """Initialize the selector.
+
+        :param policy: Tie-break policy after failed-step count.
+        :type policy: BestPathSelectionPolicy | str
+        """
+        self._policy = BestPathSelectionPolicy(policy)
+
+    @property
+    def policy(self) -> BestPathSelectionPolicy:
+        """Active best-path selection policy."""
+        return self._policy
 
     def select(
         self,
@@ -53,14 +75,7 @@ class BestPathSelector:
         """
         if not variants:
             raise EmptyVariantsError("unknown")
-        return min(
-            variants,
-            key=lambda v: (
-                self._count_failed_steps(v, score_getter),
-                -self._average_score(v, score_getter),
-                v.path.num_steps,
-            ),
-        )
+        return min(variants, key=lambda v: self._rank_key(v, score_getter))
 
     def select_for_solv_1(self, variants: tuple[VariantResult, ...]) -> VariantResult:
         """Select the best variant for Solv-1 (functional-group-agnostic)."""
@@ -69,6 +84,30 @@ class BestPathSelector:
     def select_for_solv_2(self, variants: tuple[VariantResult, ...]) -> VariantResult:
         """Select the best variant for Solv-2 (functional-group-aware)."""
         return self.select(variants, _score_with_fg)
+
+    def _rank_key(
+        self, variant: VariantResult, score_getter: ScoreGetter
+    ) -> tuple[int, int, float] | tuple[int, float, int]:
+        """Return the ``min``-compatible sort key for ``variant``.
+
+        :param variant: Variant to rank.
+        :type variant: VariantResult
+        :param score_getter: Extracts the per-step score to rank by.
+        :type score_getter: ScoreGetter
+        :return: Lexicographic key — fewer failed steps first, then the
+            active policy's tie-breakers.
+        :rtype: tuple
+        :raises UnsupportedBestPathPolicyError: If ``self._policy`` is not a
+            known policy.
+        """
+        failed = self._count_failed_steps(variant, score_getter)
+        mean = self._average_score(variant, score_getter)
+        length = variant.path.num_steps
+        if self._policy is BestPathSelectionPolicy.PATH_LENGTH:
+            return (failed, length, -mean)
+        if self._policy is BestPathSelectionPolicy.MEAN_SCORE:
+            return (failed, -mean, length)
+        raise UnsupportedBestPathPolicyError(self._policy)
 
     def _count_failed_steps(
         self, variant: VariantResult, score_getter: ScoreGetter

@@ -1,6 +1,18 @@
 from enum import Enum
 
 
+class BuildingBlockMatchPolicy(str, Enum):
+    """How :class:`~ursa.BuildingBlockChecker` keys the BB catalog.
+
+    * ``SMILES`` (default) — RDKit-canonical SMILES (legacy behaviour).
+    * ``INCHI_KEY`` — standard InChIKey; tautomer SMILES of the same
+      building block match.
+    """
+
+    SMILES = "smiles"
+    INCHI_KEY = "inchi_key"
+
+
 class ValidationConfig(Enum):
     """Configuration for path validation and collapsing.
 
@@ -13,6 +25,10 @@ class ValidationConfig(Enum):
     combinations. Paths exceeding this limit are returned as-is
     (only the original tree, without collapsed variants) to avoid
     combinatorial explosion.
+
+    Catalog identity for stock termination is controlled by
+    :class:`BuildingBlockMatchPolicy` (passed to
+    :class:`~ursa.BuildingBlockChecker` / :class:`~ursa.Ursa`).
     """
 
     min_path_depth = 1
