@@ -6,6 +6,8 @@ from .basic import RetrosyntheticNode
 from .basic import RetrosyntheticPath
 from .basic import StepResult
 from .basic import VariantResult
+from .configs import BestPathSelectionPolicy
+from .configs import BuildingBlockMatchPolicy
 from .configs import DataConfig
 from .datasets import BenchmarkDataset
 from .datasets import TargetEntry
@@ -15,6 +17,8 @@ from .ursa import Ursa
 __all__ = [
     "Ursa",
     "UrsaError",
+    "BestPathSelectionPolicy",
+    "BuildingBlockMatchPolicy",
     "DataConfig",
     "BenchmarkDataset",
     "TargetEntry",

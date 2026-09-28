@@ -1,5 +1,6 @@
 from .building_block_errors import BuildingBlockError
 from .building_block_errors import CatalogLoadError
+from .building_block_errors import UnsupportedBuildingBlockMatchPolicyError
 from .consistency_errors import ConsistencyError
 from .consistency_errors import DisconnectedTreeError
 from .consistency_errors import MultipleRootsError
@@ -12,4 +13,5 @@ __all__ = [
     "MultipleRootsError",
     "BuildingBlockError",
     "CatalogLoadError",
+    "UnsupportedBuildingBlockMatchPolicyError",
 ]

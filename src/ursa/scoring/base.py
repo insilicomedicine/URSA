@@ -17,8 +17,13 @@ class ReactionScore(Protocol):
     :type without_functional_groups: float
     """
 
-    with_functional_groups: float
-    without_functional_groups: float
+    @property
+    def with_functional_groups(self) -> float:
+        """FG-aware score. Read-only to accept frozen scorer results."""
+
+    @property
+    def without_functional_groups(self) -> float:
+        """FG-agnostic score. Read-only to accept frozen scorer results."""
 
 
 class ReactionScorer(Protocol):

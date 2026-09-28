@@ -1,15 +1,22 @@
 import pytest
 
 from tests.conftest import make_variant
+from ursa.configs import BestPathSelectionPolicy
 from ursa.configs import PathScoringConfig
 from ursa.scoring.best_path_selector import _score_with_fg
 from ursa.scoring.best_path_selector import BestPathSelector
 from ursa.scoring.errors import EmptyVariantsError
+from ursa.scoring.errors import UnsupportedBestPathPolicyError
 
 
 @pytest.fixture
 def selector() -> BestPathSelector:
     return BestPathSelector()
+
+
+@pytest.fixture
+def length_selector() -> BestPathSelector:
+    return BestPathSelector(policy=BestPathSelectionPolicy.PATH_LENGTH)
 
 
 class TestSelect:
@@ -20,6 +27,15 @@ class TestSelect:
     def test_empty_variants_raises(self, selector):
         with pytest.raises(EmptyVariantsError):
             selector.select_for_solv_2(())
+
+    def test_unsupported_policy_raises(self, selector, path_1step):
+        object.__setattr__(selector, "_policy", "not-a-policy")
+        vr = make_variant(path_1step, (3.0,))
+        with pytest.raises(UnsupportedBestPathPolicyError, match="not-a-policy"):
+            selector.select_for_solv_2((vr,))
+
+    def test_default_policy_is_mean_score(self, selector):
+        assert selector.policy is BestPathSelectionPolicy.MEAN_SCORE
 
     def test_prefers_fewer_failed_steps(self, selector, path_3step_linear):
         vr0 = make_variant(path_3step_linear, (3.0, 2.0, 1.0))
@@ -35,6 +51,13 @@ class TestSelect:
         vr_long = make_variant(path_3step_linear, (2.0, 2.0, 2.0))
         vr_short = make_variant(path_1step, (2.0,))
         assert selector.select_for_solv_2((vr_long, vr_short)) is vr_short
+
+    def test_mean_score_prefers_higher_average_over_shorter(
+        self, selector, path_3step_linear, path_1step
+    ):
+        vr_long_high = make_variant(path_3step_linear, (5.0, 5.0, 5.0))
+        vr_short_low = make_variant(path_1step, (1.0,))
+        assert selector.select_for_solv_2((vr_long_high, vr_short_low)) is vr_long_high
 
     def test_solv_1_and_solv_2_can_pick_different_variants(
         self, selector, path_3step_linear
@@ -53,6 +76,33 @@ class TestSelect:
         )
         assert selector.select_for_solv_1((vr_a, vr_b)) is vr_a
         assert selector.select_for_solv_2((vr_a, vr_b)) is vr_b
+
+
+class TestPathLengthPolicy:
+    def test_prefers_shorter_despite_lower_mean(
+        self, length_selector, path_3step_linear, path_1step
+    ):
+        vr_long_high = make_variant(path_3step_linear, (5.0, 5.0, 5.0))
+        vr_short_low = make_variant(path_1step, (1.0,))
+        assert (
+            length_selector.select_for_solv_2((vr_long_high, vr_short_low))
+            is vr_short_low
+        )
+
+    def test_same_length_tiebreak_by_mean(self, length_selector, path_3step_linear):
+        vr_low = make_variant(path_3step_linear, (1.0, 1.0, 1.0))
+        vr_high = make_variant(path_3step_linear, (3.0, 2.0, 1.0))
+        assert length_selector.select_for_solv_2((vr_low, vr_high)) is vr_high
+
+    def test_still_prefers_fewer_failed_steps(
+        self, length_selector, path_3step_linear, path_1step
+    ):
+        vr_short_failed = make_variant(path_1step, (0.0,))
+        vr_long_ok = make_variant(path_3step_linear, (1.0, 1.0, 1.0))
+        assert (
+            length_selector.select_for_solv_2((vr_short_failed, vr_long_ok))
+            is vr_long_ok
+        )
 
 
 class TestCountFailedSteps:
