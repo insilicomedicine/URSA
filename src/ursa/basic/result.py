@@ -141,7 +141,7 @@ class PathResult:
         (the representative used to decide ``passes_solv_1``).
     :type best_variant_solv_1: VariantResult
     :param best_variant_solv_2: Variant minimising Solv-2 failed steps;
-        also the variant used for display.
+        also the variant used for display and CDXML rendering.
     :type best_variant_solv_2: VariantResult
     """
 

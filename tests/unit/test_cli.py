@@ -13,9 +13,11 @@ from retrocast.typing import InChIKeyStr
 from retrocast.typing import SmilesStr
 
 from ursa.cli import _apply_top_k
+from ursa.cli import _benchmark_target_ids
 from ursa.cli import _build_parser
 from ursa.cli import _load_candidates
 from ursa.cli import _load_routes
+from ursa.datasets import TargetEntry
 
 
 def _route(smiles: str) -> Route:
@@ -81,6 +83,12 @@ def test_apply_top_k_zero_keeps_all():
 _BASE_ARGS = ["--routes", "x.json.gz", "--benchmark", "EXPERT_2026", "--output", "out"]
 
 
+def test_cdxml_names_use_benchmark_ids():
+    mapping = _benchmark_target_ids([TargetEntry(id="X404-1768-3704", smiles="C(C)O")])
+
+    assert mapping == {"CCO": "X404-1768-3704"}
+
+
 def test_workers_arg_defaults_to_none():
     args = _build_parser().parse_args(_BASE_ARGS)
     assert args.workers is None
@@ -89,3 +97,32 @@ def test_workers_arg_defaults_to_none():
 def test_workers_arg_parsed():
     args = _build_parser().parse_args(_BASE_ARGS + ["-j", "4"])
     assert args.workers == 4
+
+
+def test_policy_args_default_to_legacy_behavior():
+    args = _build_parser().parse_args(_BASE_ARGS)
+
+    assert args.bb_match_policy == "smiles"
+    assert args.best_path_policy == "mean_score"
+    assert args.prepare_cdxml_files is False
+    assert args.chemcensor_db is None
+
+
+def test_policy_and_drawing_args_parsed():
+    args = _build_parser().parse_args(
+        _BASE_ARGS
+        + [
+            "--bb-match-policy",
+            "inchi_key",
+            "--best-path-policy",
+            "path_length",
+            "--prepare-cdxml-files",
+            "--chemcensor-db",
+            "custom.sqlite",
+        ]
+    )
+
+    assert args.bb_match_policy == "inchi_key"
+    assert args.best_path_policy == "path_length"
+    assert args.prepare_cdxml_files is True
+    assert args.chemcensor_db == "custom.sqlite"

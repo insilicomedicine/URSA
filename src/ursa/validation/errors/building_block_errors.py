@@ -34,3 +34,23 @@ class CatalogLoadError(BuildingBlockError):
             f"CatalogLoadError(catalog_path={self.catalog_path!r}, "
             f"msg={self.msg!r})"
         )
+
+
+class UnsupportedBuildingBlockMatchPolicyError(BuildingBlockError):
+    """Raised when :class:`~ursa.BuildingBlockChecker` gets an unknown policy.
+
+    :param policy: The unsupported match-policy value.
+    :type policy: object
+    """
+
+    def __init__(self, policy: object) -> None:
+        """Initialize UnsupportedBuildingBlockMatchPolicyError.
+
+        :param policy: The unsupported match-policy value.
+        :type policy: object
+        """
+        self.policy = policy
+        super().__init__(f"unsupported BB match policy: {policy!r}")
+
+    def __repr__(self) -> str:
+        return f"UnsupportedBuildingBlockMatchPolicyError(policy={self.policy!r})"

@@ -16,11 +16,11 @@ A *variant* is the original (uncollapsed) route together with every valid collap
 
 | Level | Field | Requirement |
 | --- | --- | --- |
-| **Solv-0** | `solv_0` | Stock termination: the tree is consistent (valid SMILES, no breaks) **and** every starting material is in the catalog. |
+| **Solv-0** | `solv_0` | Stock termination: the tree is consistent (valid SMILES, no breaks) **and** every starting material is in the catalog. Matching uses canonical SMILES by default; `--bb-match-policy inchi_key` enables tautomer-aware InChIKey matching. |
 | **Solv-1** | `solv_1` | Solv-0 **and** some variant (original or collapsed) where every step scores `> 0` with ChemCensor **without** functional-group matching (legal reaction center). |
 | **Solv-2** | `solv_2` | Solv-0 **and** some variant (original or collapsed) where every step scores `> 0` with ChemCensor **with** functional-group matching (chemical plausibility). |
 
-Because collapsing a route changes reaction identities (and therefore scores), the best variant is selected **independently for each level** over the full candidate set (original + collapsed): a route passes Solv-N iff *any* of those variants clears that level. `PathResult` exposes `passes_solv_0/1/2` plus `best_variant_solv_1` and `best_variant_solv_2` (the latter is used for display). A target that is itself a building block has no reaction steps and is flagged `is_no_synthesis` (it passes no Solv level).
+Because collapsing a route changes reaction identities (and therefore scores), the best variant is selected **independently for each level** over the full candidate set (original + collapsed): a route passes Solv-N iff *any* of those variants clears that level. Ranking always minimizes failed steps first; remaining ties use `--best-path-policy mean_score` (default: highest mean score, then shortest route) or `path_length` (shortest route, then highest mean score). `PathResult` exposes `passes_solv_0/1/2` plus `best_variant_solv_1` and `best_variant_solv_2` (the latter is used for display and CDXML rendering). A target that is itself a building block has no reaction steps and is flagged `is_no_synthesis` (it passes no Solv level).
 
 Each `StepResult` carries both `score_without_fg` (Solv-1) and `score_with_fg` (Solv-2); the dataset metrics also report `mean_score_without_fg` / `mean_score_with_fg` as diagnostics over the per-level best variants, and `routes_solv_0/1/2` / `routes_no_synthesis` as raw counts.
 
@@ -49,11 +49,11 @@ uv sync --extra dev
 
 On the first scoring run, URSA downloads required data assets from HuggingFace:
 
-- [ChemCensor database](https://huggingface.co/datasets/insilicomedicine/chemcensor) → `data/chemcensor_db/`
+- [ChemCensor U3 database](https://huggingface.co/datasets/insilicomedicine/chemcensor) (`ChemCensor-DB-U3.sqlite`, required by ChemCensor 1.4) → `data/chemcensor_db/`
 - [Building-block catalog](https://huggingface.co/datasets/insilicomedicine/URSA-BBs) → `data/building_blocks/`
 - [Benchmark target sets](https://huggingface.co/datasets/insilicomedicine/URSA-benchmarking-sets) → `data/URSA_benchmarking_sets/` (when a built-in preset is used)
 
-A legacy ChemCensor filename (`ChemCensor_DB_v1_0_0.sqlite`) in the same directory is also accepted.
+ChemCensor 1.4 does not accept the older `ChemCensor-DB-U2-1.0.0` or `ChemCensor_DB_v1_0_0` databases.
 
 ## Example run
 
@@ -91,6 +91,7 @@ Artifacts:
 
 - `data/results/example_metrics.json` — aggregated dataset metrics.
 - `data/results/example_best_paths.json` — per target: `passes_solv_0/1/2` and the Solv-1 / Solv-2 best variants with per-step scores.
+- `data/results/example_schemes.zip` — optional CDXML schemes generated with `--prepare-cdxml-files`.
 
 ## RetroCast integration
 
@@ -113,6 +114,10 @@ Skip `--adapter` and use `--routes` when you already have RetroCast-formatted ro
 
 - `--top-k K` — keep only the `K` best routes per target (ranked best-first); `0` keeps all. Default: `10`.
 - `-j/--workers N` — score reactions in parallel using `N` ChemCensor worker processes (pass `0` to auto-scale to the CPU count). Omit for sequential scoring.
+- `--bb-match-policy {smiles,inchi_key}` — select canonical-SMILES or tautomer-aware InChIKey building-block matching.
+- `--best-path-policy {mean_score,path_length}` — select the best-variant tie-break order.
+- `--chemcensor-db PATH` — use an explicit local ChemCensor SQLite database instead of the public default.
+- `--prepare-cdxml-files` — render each target's best route into `{stem}_schemes.zip`. Scheme files are named by the benchmark structure ID.
 
 ## Built-in benchmark sets
 

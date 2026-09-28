@@ -17,6 +17,8 @@ from retrocast.io import load_collected_routes
 
 from ursa.basic.node import RetrosyntheticNode
 from ursa.basic.path import RetrosyntheticPath
+from ursa.configs import BestPathSelectionPolicy
+from ursa.configs import BuildingBlockMatchPolicy
 from ursa.errors import InvalidTargetKeyError
 
 _BUILTIN_BENCHMARKS = ("EXPERT_2026", "DRUGS_CLINICALS_2026")
@@ -162,6 +164,25 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument(
+        "--bb-match-policy",
+        choices=[policy.value for policy in BuildingBlockMatchPolicy],
+        default=BuildingBlockMatchPolicy.SMILES.value,
+        help=(
+            "How to match starting materials against the BB catalog: "
+            "'smiles' (default — canonical SMILES) or 'inchi_key' "
+            "(tautomer-aware standard InChIKey)."
+        ),
+    )
+    p.add_argument(
+        "--chemcensor-db",
+        metavar="SQLITE_PATH",
+        default=None,
+        help=(
+            "Path to a ChemCensor .sqlite database. Omit to download and use "
+            "the public default database."
+        ),
+    )
+    p.add_argument(
         "--top-k",
         type=int,
         default=10,
@@ -180,6 +201,25 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Score reactions in parallel using N ChemCensor worker processes. "
             "Omit for sequential scoring; pass 0 to auto-scale to the CPU count."
+        ),
+    )
+    p.add_argument(
+        "--best-path-policy",
+        choices=[policy.value for policy in BestPathSelectionPolicy],
+        default=BestPathSelectionPolicy.MEAN_SCORE.value,
+        help=(
+            "How to pick the best collapsed variant after minimising failed "
+            "steps: 'mean_score' (default — highest mean ChemCensor, then "
+            "shortest) or 'path_length' (shortest, then highest mean ChemCensor)."
+        ),
+    )
+    p.add_argument(
+        "--prepare-cdxml-files",
+        action="store_true",
+        default=False,
+        help=(
+            "Also render each best path as a CDXML reaction scheme and bundle "
+            "them into {stem}_schemes.zip next to best_paths.json."
         ),
     )
     p.add_argument(
@@ -380,6 +420,24 @@ def _routes_to_paths(routes_dict: dict):
     return paths
 
 
+def _benchmark_target_ids(targets) -> dict[str, str]:
+    """Map canonical target SMILES to benchmark structure IDs.
+
+    CDXML scheme filenames use these IDs. Both the benchmark SMILES and the
+    scored route roots are canonicalized, so non-canonical input SMILES still
+    match.
+
+    :param targets: Benchmark entries with ``id`` and ``smiles``.
+    :type targets: Iterable[TargetEntry]
+    :return: Canonical SMILES to structure ID.
+    :rtype: dict[str, str]
+    """
+    return {
+        RetrosyntheticNode(target.smiles).canonical_smiles: target.id
+        for target in targets
+    }
+
+
 def _load_benchmark(benchmark: str, id_col: str, smiles_col: str):
     """Resolve a benchmark name or CSV path to a :class:`BenchmarkDataset`.
 
@@ -438,7 +496,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  {len(paths)} paths loaded for {len(routes_dict)} targets")
 
     dataset = _load_benchmark(args.benchmark, args.id_col, args.smiles_col)
-    target_smiles = list(dataset.target_smiles)
+    targets = dataset.load()
+    target_smiles = [target.smiles for target in targets]
     print(f"Benchmark: {args.benchmark} ({len(target_smiles)} targets)")
 
     from ursa import Ursa
@@ -455,14 +514,29 @@ def main(argv: list[str] | None = None) -> None:
             )
             sys.exit(1)
         print(f"Building-block catalog: {bb_catalog_path}")
+    chemcensor_db_path: Path | None = None
+    if args.chemcensor_db:
+        chemcensor_db_path = Path(args.chemcensor_db)
+        if not chemcensor_db_path.is_file():
+            print(
+                f"error: ChemCensor database not found: {args.chemcensor_db}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(f"ChemCensor DB: {chemcensor_db_path}")
+    print(f"BB match policy: {args.bb_match_policy}")
     if parallel:
         print(f"Scoring (parallel: {n_workers or 'auto'} workers)...")
     else:
         print("Scoring...")
+    print(f"Best-path policy: {args.best_path_policy}")
     ursa = Ursa(
         parallel=parallel,
         n_workers=n_workers,
         bb_catalog_path=bb_catalog_path,
+        chemcensor_db_path=chemcensor_db_path,
+        best_path_policy=args.best_path_policy,
+        bb_match_policy=args.bb_match_policy,
     )
     result = ursa.score_dataset(paths, target_smiles=target_smiles)
 
@@ -480,6 +554,20 @@ def main(argv: list[str] | None = None) -> None:
 
     metrics_path, paths_path = result.save(args.output, stem=args.stem)
     print(f"\nSaved:\n  {metrics_path}\n  {paths_path}")
+
+    if args.prepare_cdxml_files:
+        from ursa.drawing import write_schemes_zip
+
+        print("Rendering CDXML schemes...")
+        target_id_by_smiles = _benchmark_target_ids(targets)
+        schemes_path = write_schemes_zip(
+            result,
+            args.output,
+            stem=args.stem,
+            target_id_by_smiles=target_id_by_smiles,
+        )
+        if schemes_path:
+            print(f"  {schemes_path}")
 
 
 if __name__ == "__main__":
