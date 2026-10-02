@@ -49,6 +49,7 @@ class BenchmarkDataset:
 
     EXPERT_2026: ClassVar[BenchmarkDataset]
     DRUGS_CLINICALS_2026: ClassVar[BenchmarkDataset]
+    DRUGS_CLINICALS_AGROCHEMICALS_2026: ClassVar[BenchmarkDataset]
 
     def __init__(
         self,
@@ -124,6 +125,12 @@ BenchmarkDataset.EXPERT_2026 = BenchmarkDataset(
 
 BenchmarkDataset.DRUGS_CLINICALS_2026 = BenchmarkDataset(
     DataConfig.benchmark_sets_dir / "URSA-drugs-clinicals-2026.csv",
+    id_col="Structure ID",
+    smiles_col="SMILES",
+)
+
+BenchmarkDataset.DRUGS_CLINICALS_AGROCHEMICALS_2026 = BenchmarkDataset(
+    DataConfig.benchmark_sets_dir / "URSA-drugs-clinicals-agrochemicals-2026.csv",
     id_col="Structure ID",
     smiles_col="SMILES",
 )

@@ -1,6 +1,6 @@
 [project]
 name = "ursa"
-version = "1.3.0"
+version = "1.3.1"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
