@@ -38,6 +38,6 @@ class TestEnsureBenchmarkCsv:
             repo_id="insilicomedicine/URSA-benchmarking-sets",
             repo_type="dataset",
             filename="URSA-expert-2026.csv",
-            revision="616394dac893e1cf88509aaf77fadb2a813b4226",
+            revision="42fd2f24df04e2b24836a3019342f396e06c1209",
             local_dir=target.parent,
         )

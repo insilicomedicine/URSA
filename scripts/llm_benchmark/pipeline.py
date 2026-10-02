@@ -12,7 +12,11 @@ from .sampling import sample_completions
 from .scoring import score_records
 from .templates import build_prompt
 
-_PRESETS = ("EXPERT_2026", "DRUGS_CLINICALS_2026")
+_PRESETS = (
+    "EXPERT_2026",
+    "DRUGS_CLINICALS_2026",
+    "DRUGS_CLINICALS_AGROCHEMICALS_2026",
+)
 _DEFAULT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
@@ -128,7 +132,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--benchmark",
         required=True,
         help=(
-            "Built-in preset (EXPERT_2026, DRUGS_CLINICALS_2026) or a CSV path. "
+            "Built-in preset (EXPERT_2026, DRUGS_CLINICALS_2026, "
+            "DRUGS_CLINICALS_AGROCHEMICALS_2026) or a CSV path. "
             "This list is the denominator for every Solv-N rate."
         ),
     )

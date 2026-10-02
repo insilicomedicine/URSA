@@ -13,6 +13,7 @@ _HF_BENCHMARK_FILES = frozenset(
     {
         "URSA-expert-2026.csv",
         "URSA-drugs-clinicals-2026.csv",
+        "URSA-drugs-clinicals-agrochemicals-2026.csv",
     }
 )
 
@@ -43,7 +44,7 @@ def ensure_benchmark_csv(csv_path: Path) -> Path:
             repo_id=_HF_REPO_ID,
             repo_type="dataset",
             filename=target.name,
-            revision="616394dac893e1cf88509aaf77fadb2a813b4226",
+            revision="42fd2f24df04e2b24836a3019342f396e06c1209",
             local_dir=target.parent,
         )
     )

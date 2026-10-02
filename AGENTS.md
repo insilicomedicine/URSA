@@ -47,7 +47,8 @@ Before making API calls, determine the following. Ask only for missing choices:
 1. Model identifier and provider. Examples: `openai/gpt-5`,
    `gemini/gemini-2.5-pro`, `anthropic/claude-sonnet-4-5`, `xai/grok-4`, or
    `azure/<deployment-name>`.
-2. Benchmark: `EXPERT_2026`, `DRUGS_CLINICALS_2026`, or a custom CSV path.
+2. Benchmark: `EXPERT_2026`, `DRUGS_CLINICALS_2026`,
+   `DRUGS_CLINICALS_AGROCHEMICALS_2026`, or a custom CSV path.
 3. Protocol size: target limit and samples per target. The published protocol
    is all targets with 10 samples; a smoke test is 10 targets with 1 sample.
 4. Concurrency: inference request workers and ChemCensor scoring workers.

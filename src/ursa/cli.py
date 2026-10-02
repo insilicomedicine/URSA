@@ -21,7 +21,11 @@ from ursa.configs import BestPathSelectionPolicy
 from ursa.configs import BuildingBlockMatchPolicy
 from ursa.errors import InvalidTargetKeyError
 
-_BUILTIN_BENCHMARKS = ("EXPERT_2026", "DRUGS_CLINICALS_2026")
+_BUILTIN_BENCHMARKS = (
+    "EXPERT_2026",
+    "DRUGS_CLINICALS_2026",
+    "DRUGS_CLINICALS_AGROCHEMICALS_2026",
+)
 
 
 class _CliFormatter(logging.Formatter):
@@ -441,8 +445,9 @@ def _benchmark_target_ids(targets) -> dict[str, str]:
 def _load_benchmark(benchmark: str, id_col: str, smiles_col: str):
     """Resolve a benchmark name or CSV path to a :class:`BenchmarkDataset`.
 
-    Built-in names (``EXPERT_2026``, ``DRUGS_CLINICALS_2026``) are
-    returned as the bundled presets; anything else is
+    Built-in names (``EXPERT_2026``, ``DRUGS_CLINICALS_2026``,
+    ``DRUGS_CLINICALS_AGROCHEMICALS_2026``) are returned as the bundled
+    presets; anything else is
     treated as a CSV path and loaded via
     :meth:`BenchmarkDataset.from_csv`. Exits with code 1 if the value is
     neither a known preset nor an existing file.
@@ -463,6 +468,8 @@ def _load_benchmark(benchmark: str, id_col: str, smiles_col: str):
         return BenchmarkDataset.EXPERT_2026
     if benchmark == "DRUGS_CLINICALS_2026":
         return BenchmarkDataset.DRUGS_CLINICALS_2026
+    if benchmark == "DRUGS_CLINICALS_AGROCHEMICALS_2026":
+        return BenchmarkDataset.DRUGS_CLINICALS_AGROCHEMICALS_2026
 
     csv_path = Path(benchmark)
     if not csv_path.exists():

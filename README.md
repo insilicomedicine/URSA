@@ -121,7 +121,8 @@ Skip `--adapter` and use `--routes` when you already have RetroCast-formatted ro
 
 ## Built-in benchmark sets
 
-Built-in presets (`EXPERT_2026`, `DRUGS_CLINICALS_2026`) download their CSV files
+Built-in presets (`EXPERT_2026`, `DRUGS_CLINICALS_2026`,
+`DRUGS_CLINICALS_AGROCHEMICALS_2026`) download their CSV files
 from [URSA-benchmarking-sets](https://huggingface.co/datasets/insilicomedicine/URSA-benchmarking-sets)
 on first use into `data/URSA_benchmarking_sets/`.
 

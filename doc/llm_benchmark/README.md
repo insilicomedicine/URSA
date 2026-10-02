@@ -39,10 +39,11 @@ The model is selected per run, not in `.env`. Examples include
 
 ## Benchmark sets
 
-Two built-in sets are available:
+Three built-in sets are available:
 
 - `EXPERT_2026` — 100 expert targets.
-- `DRUGS_CLINICALS_2026` — drugs and clinical candidates.
+- `DRUGS_CLINICALS_2026` — 100 drugs and clinical candidates.
+- `DRUGS_CLINICALS_AGROCHEMICALS_2026` — 333 drugs, clinical candidates, and agrochemicals.
 
 A custom CSV can be passed instead. Its default SMILES column is
 `product_smiles`; use `--smiles-col` to select another column. Target SMILES

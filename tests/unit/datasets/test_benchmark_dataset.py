@@ -156,6 +156,7 @@ class TestBundledPresets:
         [
             ("EXPERT_2026", 100),
             ("DRUGS_CLINICALS_2026", 100),
+            ("DRUGS_CLINICALS_AGROCHEMICALS_2026", 333),
         ],
     )
     def test_preset_is_benchmark_dataset(self, attr, expected_len):
@@ -167,6 +168,7 @@ class TestBundledPresets:
         [
             ("EXPERT_2026", 100),
             ("DRUGS_CLINICALS_2026", 100),
+            ("DRUGS_CLINICALS_AGROCHEMICALS_2026", 333),
         ],
     )
     @patch("ursa.datasets.benchmark_dataset.ensure_benchmark_csv")
@@ -179,7 +181,14 @@ class TestBundledPresets:
         mock_ensure.return_value = csv_path
         assert len(ds.load()) == expected_len
 
-    @pytest.mark.parametrize("attr", ["EXPERT_2026", "DRUGS_CLINICALS_2026"])
+    @pytest.mark.parametrize(
+        "attr",
+        [
+            "EXPERT_2026",
+            "DRUGS_CLINICALS_2026",
+            "DRUGS_CLINICALS_AGROCHEMICALS_2026",
+        ],
+    )
     @patch("ursa.datasets.benchmark_dataset.ensure_benchmark_csv")
     def test_preset_entries_have_non_empty_ids_and_smiles(
         self, mock_ensure, attr, tmp_path: Path
